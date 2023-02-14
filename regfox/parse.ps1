@@ -1,0 +1,1 @@
+﻿Write-Output([Regex]::Match((Get-Content "$PSScriptRoot\body.html" -Raw), '<a href="([^"]+)">Click here to download file</a>').groups[1].Value)

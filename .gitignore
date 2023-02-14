@@ -1,0 +1,6 @@
+env_vars.bat
+credentials.md
+lib
+**/*.jar
+**/log.txt
+postgresql-backup/*/

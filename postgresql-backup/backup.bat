@@ -1,0 +1,60 @@
+@echo off
+call "%~dp0../env_vars.bat"
+setlocal EnableDelayedExpansion
+
+:: Maximum number of backups to keep
+set /a max=5
+
+:: List of tables to backup
+set "table[1]=bidtracer.alloc"
+set "table[2]=quickbooks.jobs"
+set "table[3]=timestar.compensation"
+set "table[4]=timestar.timesheets_processed"
+
+
+set "stamp=%date:~-4%-%date:~-10,2%-%date:~-7,2%"
+set "PGPASSWORD=!postgresql_pass!"
+set "script=%~dp0mail_script.ps1"
+set "tmpFile=%~dp0tmp.csv"
+set /a len=0
+:counter
+  set /a len+=1
+  if "!table[%len%]!" NEQ "" goto :counter
+set /a len-=1
+(
+  echo %stamp%
+  set "err=0"
+  for /L %%i in (1,1,%len%) do (
+    set "folder=%~dp0!table[%%i]!"
+    if exist "!folder!" (
+      set /a num=1
+      for /f "usebackq tokens=* delims=" %%j in (`dir /B /O:-D /T:C "!folder!"`) do (
+        set /a num+=1
+        if !num! GTR %max% del /F "!folder!\%%j" >nul
+      )
+    ) else (
+      mkdir "!folder!" >nul
+    )
+    if exist "%tmpFile%" del /F "%tmpFile%" >nul
+    psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q --csv -o "%tmpFile%" -c "SELECT * FROM !table[%%i]!"
+    if !ERRORLEVEL! EQU 0 (
+      if exist "%tmpFile%" (
+        move /Y "%tmpFile%" "!folder!/%stamp%.csv" >nul
+      )
+      echo Successful backup: !table[%%i]!
+    ) else (
+      set "err=1"
+      echo Failed backup: !table[%%i]!
+    )
+  )
+  if !err! EQU 1 (
+    call :email
+  )
+) >> "%~dp0log.txt" 2>&1
+exit
+
+:email
+  echo Send-MailMessage -From "!pbi_email!" -To "!error_email!" -Subject "Database Backup Failure" -Body "This is an automated alert. Failed to backup tables in the PostgreSQL database See the log file for more details." -SmtpServer "smtp-mail.outlook.com" -Port 587 -UseSsl -Credential ^(New-Object PSCredential^("!pbi_email!", ^(ConvertTo-SecureString "!pbi_password!" -AsPlainText -Force^)^)^)>"%script%"
+  PowerShell -NoLogo -File "%script%"
+  if exist "%script%" del /F "%script%" >nul
+exit /b 0
