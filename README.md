@@ -39,7 +39,7 @@
 
 ## Data Flowchart
 
-Circle nodes denote a user-facing endpoint. Cylinder nodes denote a type of data storage container. Hexagon nodes specify a data processing machanism where we have complete, fine-grained control over all steps in the procedure. Rhombus nodes indicate a data processing mechanism over which we do not have complete control. Dotted arrows represent data transfers occurring through a RESTful web API. The exception to this rule is [Quickbooks Desktop][Quickbooks] which exposes data through an SDK. However, it is our intention to migrate to [Quickbooks Online][Quickbooks] in a year or two, which does includes a RESTful web API.
+Circle nodes denote a user-facing endpoint. Cylinder nodes denote a type of data storage container. Hexagon nodes specify a data processing machanism where we have complete, fine-grained control over all steps in the procedure. Rhombus nodes indicate a data processing mechanism over which we do not have complete control. Dotted arrows represent data transfers occurring through a RESTful web API. The exception to this rule is [Quickbooks Desktop][Quickbooks] which exposes data through an SDK. However, it is our intention to migrate to [Quickbooks Online][Quickbooks] in a year or two, which does include a RESTful web API.
 
 ```mermaid
 flowchart LR
@@ -143,7 +143,7 @@ After publishing new Power BI reports, you will want to attempt to manually refr
 | [Asana] | Every 6 hours |
 | [Zendesk] | Every 12 hours |
 | [Pipedrive] | Every 12 hours |
-| [Zendesk] | Every 12 hours |
+| [Mailchimp] | Disabled |
 | [Google Analytics] | Disabled |
 
 There are a few problems with the Stitch integrations. Since the Asana integration takes a long time (multiple hours) to synchronize everything, it is on my TODO list to create a Java application which replaces this functionality. When nodes are deleted from the source, Stitch will not delete them from the database. Stitch only updates existing nodes or creates new nodes. This is most problematic for Asana, which is why I created a Java application to delete these ghost nodes from the Asana database.
