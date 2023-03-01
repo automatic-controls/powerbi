@@ -118,7 +118,7 @@ These languages are listed in approximate order of their importance. You should 
 
 All scripts and power BI automation are based out of the **ACES-Utility2** server. When connected to the ACES network, you can RDP into the server using the provided credentials. Be sure to use the **AUTOMATICCONTRO** domain. Most scripts on the server are triggered using scheduled tasks.
 
-When errors occur, scripts are typically configured to send email notifications. There are three places required to change the recipients of these notifications. The first place is the `error_email` variable in the *./env_vars.bat* script located at the root of this repository. The second place is in the [Power Automate] cloud flow named *Power BI notifications forwarding*. The third place is in the [Power Automate] desktop flow named *Bidtracer* on **ACES-Utility2**.
+When errors occur, scripts are typically configured to send email notifications. There are four places required to change the recipients of these notifications. The first place is the `error_email` variable in the *./env_vars.bat* script located at the root of this repository. The second place is in the [Power Automate] cloud flow named *Power BI notifications forwarding*. The third place is in the [Power Automate] desktop flow named *Bidtracer* on **ACES-Utility2**. The fourth place is in the Python source code of a function app, *acesfuncy1 &#8594; cradlepointAPIExtract*, on [Azure Portal].
 
 Most data is sent to a PostgreSQL database for processing and historical storage before Power BI reports ever touch it. I would suggest inspecting this database with [Azure Data Studio](https://azure.microsoft.com/en-us/products/data-studio/) to get familiar with its structure. If you're accessing the database from an unknown IP, you'll need to add a firewall rule in the [Azure Portal].
 
@@ -260,7 +260,7 @@ The purpose of this script is to move data from the [Cradlepoint API](https://de
 1. The *acesfuncy1* function app with the *cradlepointAPIExtract* function on [Azure Portal] runs daily at 1:30PM.
 2. The function uses some Python scripts to put data from [Cradlepoint] into the PostgreSQL database.
 
-Python script source code is available on [Azure Portal]. In the past, this script has failed when Cradlepoint adds new columns to their API. As of now, the script is configured to send emails to the wrong place (an old IT consultant's email). I haven't bothered to fix it yet because it won't let me edit the script online. There's probably a way to do it, but I haven't taken the time.
+Python script source code is available on [Azure Portal]. The scripts can be modified by uploading another file with the same name to Azure. In the past, this script has failed when Cradlepoint adds new columns to their API. The solution for this type of error is to add the missing columns to the appropriate tables in the PostgreSQL database.
 
 ## Development
 
