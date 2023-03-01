@@ -17,6 +17,8 @@
 [QQube]: https://clearify.com/wiki/view/1422/getting-started
 [Microsoft Teams]: https://www.microsoft.com/en-us/microsoft-teams/group-chat-software
 [GitHub]: https://github.com/automatic-controls/powerbi
+[Verizon Connect]: https://reveal.fleetmatics.com/login.aspx
+[Verizon Developer Connect]: https://fim.us.fleetmatics.com/
 
 # Power BI Documentation
 
@@ -33,6 +35,7 @@
     - [qqube-validate](#qqube-validate)
     - [zendesk-validate](#zendesk-validate)
     - [bidtracer](#bidtracer)
+    - [verizon](#verizon)
     - [regfox](#regfox)
     - [cradlepoint](#cradlepoint)
   - [Development](#development)
@@ -69,6 +72,7 @@ flowchart LR
   quickbooks-.->qqube-->qq_database-->powerbi
   qq_database-->qq_dataflows-->powerbi
   qq_database-->qq_script-->postgresql-->powerbi
+  verizon((Verizon\nConnect))-->ver_email{Scheduled\nEmail}-->ver_azure{{Azure Logic\nApp}}-->ver_script{{Batch File\nScript}}-->postgresql
   synchrony((Synchrony))--->ftp{FTP}-->synch_script{{Batch File\nScript}}-->postgresql
   bidtracer--->power_auto-->bid_upload-->postgresql
   cradlepoint-...->cradle_script-->postgresql
@@ -89,6 +93,7 @@ flowchart LR
 | [Pipedrive] | Sales software to track potential upcoming projects |
 | [RegFox] | Software to manage customer training event registration |
 | [Cradlepoint] | Network routing devices which create a VPN between remote sites and ACES |
+| [Verizon Connect] | GPS tracking software to monitor ACES vehicle location and usage. |
 | [Mailchimp] | Marketing software platform |
 | [Google Analytics] | Analytics service which records usage statistics and web traffic on the ACES website |
 
@@ -104,16 +109,18 @@ These languages are listed in approximate order of their importance. You should 
 | [Power Query M Formula](https://learn.microsoft.com/en-us/powerquery-m/) | Simple data manipulation in Power BI |
 | [Batch Files](https://learn.openwaterfoundation.org/owf-learn-windows-shell/) | Scripts to upload CSV files to the database |
 | [Regular Expressions](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions/Cheatsheet) | Parses data from text fields |
-| [PowerShell](https://learn.microsoft.com/en-us/powershell/) | Small scripts which prompt the user for input |
+| [PowerShell](https://learn.microsoft.com/en-us/powershell/) | Small scripts for operations that batch files do not support |
 | [SQL Anywhere](https://help.sap.com/docs/SAP_SQL_Anywhere/93079d4ba8e44920ae63ffb4def91f5b/f3c043ea50ed48e68b1c73774e2a2608.html) | Financial database queries |
 | [Python](https://www.python.org/) | Azure function to extract data |
 | [Markdown](https://www.markdownguide.org/) | Documentation |
 
 ## Overview
 
-All scripts and power BI automation is based out of the **ACES-Utility2** server. When connected to the ACES network, you can RDP into the server using the provided credentials. Be sure to use the **AUTOMATICCONTRO** domain. Most scripts on the server are triggered using scheduled tasks. When errors occur, scripts are typically configured to send an email notification to the Power BI channel in [Microsoft Teams].
+All scripts and power BI automation are based out of the **ACES-Utility2** server. When connected to the ACES network, you can RDP into the server using the provided credentials. Be sure to use the **AUTOMATICCONTRO** domain. Most scripts on the server are triggered using scheduled tasks.
 
-Most data is sent to a PostgreSQL database for processing and historical storage before Power BI ever touches it. I would suggest inspecting this database with [Azure Data Studio](https://azure.microsoft.com/en-us/products/data-studio/) to get familiar with its structure. If you're accessing the database from an unknown IP, you'll need to add a firewall rule in the [Azure Portal].
+When errors occur, scripts are typically configured to send email notifications. There are three places required to change the recipients of these notifications. The first place is the `error_email` variable in the *./env_vars.bat* script located at the root of this repository. The second place is in the [Power Automate] cloud flow named *Power BI notifications forwarding*. The third place is in the [Power Automate] desktop flow named *Bidtracer* on **ACES-Utility2**.
+
+Most data is sent to a PostgreSQL database for processing and historical storage before Power BI reports ever touch it. I would suggest inspecting this database with [Azure Data Studio](https://azure.microsoft.com/en-us/products/data-studio/) to get familiar with its structure. If you're accessing the database from an unknown IP, you'll need to add a firewall rule in the [Azure Portal].
 
 ![](images/postgresql_firewall.png)
 
@@ -128,7 +135,7 @@ Note that there is a bug in Power BI when querying dataflows. The data will appe
 ![](images/dataflow_version.png)
 ![](images/dataflow_no_version.png)
 
-A few Azure logic apps are used to capture email attachments and download them to **ACES-Utility2**. At which point, scheduled scripts grab the downloaded attachments and upload them to the PostgreSQL database. Some Excel spreadsheets are directly referenced in Power BI for data that must be manually entered. These spreadsheets typically live on **ACES-Utility2** and in [Sharepoint]. I recommend that spreadsheets be queried from [Sharepoint] instead of **ACES-Utility2** when gathering data in Power BI.
+A few Azure logic apps are used to capture email attachments and download them to **ACES-Utility2**. At which point, scheduled scripts grab the downloaded attachments and upload them to the PostgreSQL database. Some Excel spreadsheets are directly referenced in Power BI for data that must be manually entered. These spreadsheets typically live on **ACES-Utility2** and in [Sharepoint]. I recommend that spreadsheets be queried from [Sharepoint] instead of **ACES-Utility2** when connecting data sources in Power BI.
 
 After publishing new Power BI reports, you will want to attempt to manually refresh them on the service. If any errors occur, you should go into settings to make sure the service is mapping all the data sources appropriately. Sometimes, credentials from PBI desktop do not seemlessly transfer to the service when published. Typically, you will setup all reports to have a daily scheduled refresh.
 
@@ -156,7 +163,7 @@ The purpose of this script is to delete ghost projects and tasks from the [Asana
 2. The batch script executes a Java application *./asana-ghost-clean/asana-ghost-clean.jar*.
 3. The Java application deletes projects and tasks from the PostgreSQL database when they do not exist in [Asana] (usually indicates these items existed at one time but have since been deleted).
 
-If an error occurs at any step in the process, the batch script is configured to notify a channel in [Microsoft Teams]. Detailed error information can be found in *./asana-ghost-clean/log.txt*.
+If an error occurs at any step in the process, the batch script is configured to send email notifications. Detailed error information can be found in *./asana-ghost-clean/log.txt*.
 
 ### [postgresql-backup](./postgresql-backup/)
 
@@ -165,7 +172,7 @@ The purpose of this script is to backup a few important tables from the PostgreS
 1. A scheduled task (daily at 4:00AM) on **ACES-Utility2** with name *PostgreSQL Database Backup* executes a batch script: [*./postgresql-backup/backup.bat*](./postgresql-backup/backup.bat).
 2. The script exports a few tables from the PostgreSQL database as CSV files. A maximum of 5 distinct backups can be saved at the same time.
 
-If an error occurs at any step in the process, the batch script is configured to notify a channel in [Microsoft Teams]. Detailed error information can be found in *./postgresql-backup/log.txt*.
+If an error occurs at any step in the process, the batch script is configured to send email notifications. Detailed error information can be found in *./postgresql-backup/log.txt*.
 
 ### [synchrony](./synchrony/)
 
@@ -180,7 +187,7 @@ The purpose of this script is to synchronize a [Quickbooks] job table from the S
 3. The batch script executes a Java application *./qqube-sync/qqube-sync.jar*.
 4. The Java application copies data from `QQubeUser.vd_Job` in the SQL Anywhere database to `quickbooks.jobs` in the PostgreSQL database using last-modified timestamps to determine what needs updating.
 
-If an error occurs at any step in the process, the batch script is configured to notify a channel in [Microsoft Teams]. Detailed error information can be found in *./qqube-sync/log.txt*.
+If an error occurs at any step in the process, the batch script is configured to send email notifications. Detailed error information can be found in *./qqube-sync/log.txt*.
 
 ### [qqube-validate](./qqube-validate/)
 
@@ -189,7 +196,7 @@ The purpose of this script is to verify job numbers and custom fields are typed 
 1. A scheduled task (every Wednesday at 1:00AM) on **ACES-Utility2** with name *QQubeValidation* executes a batch script: [*./qqube-validate/exec.bat*](./qqube-validate/exec.bat).
 2. The batch script executes a Java application *./qqube-validate/qqube-validate.jar*.
 3. The Java application inspects the SQL Anywhere database for any jobs that do not meet validation requirements. These bad jobs are printed to the standard output stream. Afterwards, control is returned to the batch script.
-4. The batch script redirects the standard output stream from the Java application to *./qqube-validate/log.txt*. If any bad jobs exist or any errors occur, the batch script sends an email to a channel in [Microsoft Teams] with *./qqube-validate/log.txt* as an attachment.
+4. The batch script redirects the standard output stream from the Java application to *./qqube-validate/log.txt*. If any bad jobs exist or any errors occur, the batch script sends email notifications with *./qqube-validate/log.txt* as an attachment.
 
 ### [zendesk-validate](./zendesk-validate/)
 
@@ -199,7 +206,7 @@ The purpose of this script is to ensure job numbers are typed into [Zendesk] tic
 2. The batch script executes a Java application *./zendesk-validate/zendesk-validate.jar*.
 3. The Java application queries a list of Quickbooks jobs and Zendesk tickets from the PostgreSQL database. A list of bad tickets (if any exist) is emailed to dstclair@automaticcontrols.net and zdhom@automaticcontrols.net.
 
-If an error occurs at any step in the process, the batch script is configured to notify a channel in [Microsoft Teams]. Detailed error information can be found in *./zendesk-validate/log.txt*.
+If an error occurs at any step in the process, the batch script is configured to send email notifications. Detailed error information can be found in *./zendesk-validate/log.txt*.
 
 Eventually, the intention is that bad tickets will be emailed to their creators. Emailing the entire list to Desiree and Zach is a temporary configuration to verify that all expectations are met.
 
@@ -213,7 +220,21 @@ The purpose of this script is to gather data from [Bidtracer] and upload it to t
 4. The batch script converts the XLSX file to the CSV format and uploads it to the PostgreSQL database.
 5. A PostgreSQL trigger is invoked to delete duplicate Bidtracer rows: [*./bidtracer/trigger.sql*](./bidtracer/trigger.sql).
 
-If an error occurs at any step in the process, the batch script is configured to notify a channel in [Microsoft Teams]. Detailed error information can be found in *./bidtracer/log.txt*.
+If an error occurs at any step in the process, the batch script is configured to send email notifications. Detailed error information can be found in *./bidtracer/log.txt*.
+
+### [verizon](./verizon/)
+
+The purpose of this script is to gather data from [Verizon Connect] and upload it to the PostgreSQL database. Collected data includes GPS ping locations on ACES vehicles (taken every 30 seconds). Additionally, safety violations such as speeding and hard-braking are recorded.
+
+1. <powerbi@automaticcontrols.net> receives three emails from Verizon (no-reply@verizonconnect.com) everyday between 4:00AM and 6:00AM. Each email contains one report in CSV format. Each report corresponds to one table in the PostgreSQL database: *movements*, *speeding*, and *incidents*.
+2. The **verizon-email-capture** logic app on [Azure Portal] captures emails from Verizon with subject containing the phrase: *Scheduled Report*.
+3. Attachments from captured emails are saved to *./verizon/\*.csv* on the **ACES-Utility2** computer.
+4. Captured emails are moved to the *deleted* mailbox.
+5. A scheduled task (daily at 6:30AM) ON **ACES-Utility2** with name *VerizonDataImport* executes a batch script: [*./verizon/import.bat*](./verizon/import.bat).
+6. The batch script uploads each CSV file attachment to the appropriate table in the PostgreSQL database.
+7. PostgreSQL triggers are invoked to delete duplicate rows: [*./verizon/trigger.sql*](./verizon/trigger.sql).
+
+If an error occurs at any step in the process, the batch script is configured to send email notifications. Detailed error information can be found in *./verizon/log.txt*.
 
 ### [regfox](./regfox/)
 
@@ -230,7 +251,7 @@ If an error occurs at any step in the process, the batch script is configured to
 9. The script deletes *./regfox/body.html*.
 10. The CSV document is automatically synced / uploaded to [Sharepoint].
 
-If an error occurs at any step in the process, the batch script is configured to notify a channel in [Microsoft Teams]. Detailed error information can be found in *./regfox/log.txt*.
+If an error occurs at any step in the process, the batch script is configured to send email notifications. Detailed error information can be found in *./regfox/log.txt*.
 
 ### cradlepoint
 
@@ -253,7 +274,7 @@ This section describes a few prerequisites for getting the scripts in this repos
 set "lib=%~dp0lib"
 set "pbi_email=pbi@email.com"
 set "pbi_password=12345678"
-set "error_email=abcdefghijk@amer.teams.ms"
+set "error_email=abcdefghijk@amer.teams.ms;username@automaticcontrols.net"
 set "postgresql_url=postgresql.database.net"
 set "postgresql_user=username"
 set "postgresql_pass=12345678"

@@ -2,5 +2,6 @@ env_vars.bat
 credentials.md
 lib
 **/*.jar
+**/*.csv
 **/log.txt
 postgresql-backup/*/

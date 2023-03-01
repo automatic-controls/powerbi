@@ -54,7 +54,7 @@ exit /b
 exit /b 0
 
 :email
-  echo Send-MailMessage -From "!pbi_email!" -To @^("!error_email!"^) -Subject "RegFox Import Failure" -Body "This is an automated alert. %err%" -SmtpServer "smtp-mail.outlook.com" -Port 587 -UseSsl -Credential ^(New-Object PSCredential^("!pbi_email!", ^(ConvertTo-SecureString "!pbi_password!" -AsPlainText -Force^)^)^)>"%script%"
+  echo Send-MailMessage -From "!pbi_email!" -To "!error_email!".Split^(";"^) -Subject "RegFox Import Failure" -Body "This is an automated alert. %err%" -SmtpServer "smtp-mail.outlook.com" -Port 587 -UseSsl -Credential ^(New-Object PSCredential^("!pbi_email!", ^(ConvertTo-SecureString "!pbi_password!" -AsPlainText -Force^)^)^)>"%script%"
   PowerShell -NoLogo -File "%script%"
   if exist "%script%" del /F "%script%" >nul
 exit /b 0

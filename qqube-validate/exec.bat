@@ -12,7 +12,7 @@ if "!ret!" NEQ "0" call :email
 exit
 
 :email
-  echo Send-MailMessage -From "!pbi_email!" -To "!error_email!" -Subject "QQube Validation" -Body "This is an automated alert. Status=%ret%. See the attached log file for more details." -Attachments "%~dp0log.txt" -SmtpServer "smtp-mail.outlook.com" -Port 587 -UseSsl -Credential ^(New-Object PSCredential^("!pbi_email!", ^(ConvertTo-SecureString "!pbi_password!" -AsPlainText -Force^)^)^)>"%script%"
+  echo Send-MailMessage -From "!pbi_email!" -To "!error_email!".Split^(";"^) -Subject "QQube Validation" -Body "This is an automated alert. Status=%ret%. See the attached log file for more details." -Attachments "%~dp0log.txt" -SmtpServer "smtp-mail.outlook.com" -Port 587 -UseSsl -Credential ^(New-Object PSCredential^("!pbi_email!", ^(ConvertTo-SecureString "!pbi_password!" -AsPlainText -Force^)^)^)>"%script%"
   PowerShell -NoLogo -File "%script%"
   if exist "%script%" del /F "%script%" >nul
 exit /b 0
