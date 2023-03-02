@@ -57,3 +57,13 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER trigger_clean_verizon_speeding
 AFTER INSERT ON verizon.speeding
 FOR EACH STATEMENT EXECUTE FUNCTION clean_verizon_speeding();
+
+CREATE OR REPLACE FUNCTION set_verizon_service_date() RETURNS TRIGGER AS $$
+  BEGIN
+    NEW."date" := CURRENT_DATE;
+    RETURN NEW;
+  END;
+$$ LANGUAGE plpgsql;
+CREATE TRIGGER set_verizon_service_date
+BEFORE INSERT OR UPDATE ON verizon.services
+FOR EACH ROW EXECUTE FUNCTION set_verizon_service_date();

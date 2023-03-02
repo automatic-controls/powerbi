@@ -226,7 +226,7 @@ If an error occurs at any step in the process, the batch script is configured to
 
 The purpose of this script is to gather data from [Verizon Connect] and upload it to the PostgreSQL database. Collected data includes GPS ping locations on ACES vehicles (taken every 30 seconds). Additionally, safety violations such as speeding and hard-braking are recorded.
 
-1. <powerbi@automaticcontrols.net> receives three emails from Verizon (no-reply@verizonconnect.com) everyday between 4:00AM and 6:00AM. Each email contains one report in CSV format. Each report corresponds to one table in the PostgreSQL database: *movements*, *speeding*, and *incidents*.
+1. <powerbi@automaticcontrols.net> receives four emails from Verizon (no-reply@verizonconnect.com) everyday between 4:00AM and 6:00AM. Each email contains one report in CSV format. Each report corresponds to one table in the PostgreSQL database: *movements*, *speeding*, *incidents*, and *services*.
 2. The **verizon-email-capture** logic app on [Azure Portal] captures emails from Verizon with subject containing the phrase: *Scheduled Report*.
 3. Attachments from captured emails are saved to *./verizon/\*.csv* on the **ACES-Utility2** computer.
 4. Captured emails are moved to the *deleted* mailbox.
