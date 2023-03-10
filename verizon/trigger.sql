@@ -65,5 +65,5 @@ CREATE OR REPLACE FUNCTION set_verizon_service_date() RETURNS TRIGGER AS $$
   END;
 $$ LANGUAGE plpgsql;
 CREATE TRIGGER set_verizon_service_date
-BEFORE INSERT OR UPDATE ON verizon.services
+BEFORE INSERT ON verizon.services
 FOR EACH ROW EXECUTE FUNCTION set_verizon_service_date();
