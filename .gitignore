@@ -3,5 +3,7 @@ credentials.md
 lib
 **/*.jar
 **/*.csv
-**/log.txt
+**/*log.txt
 postgresql-backup/*/
+synchrony/stamps.bat
+synchrony/data

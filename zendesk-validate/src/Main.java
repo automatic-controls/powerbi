@@ -23,29 +23,39 @@ public class Main {
       final String query = new String(Files.readAllBytes(installation.resolve("query.sql")), java.nio.charset.StandardCharsets.UTF_8);
       final TreeMap<String,Job> jobs = new TreeMap<String,Job>();
       final ArrayList<Ticket> tickets = new ArrayList<Ticket>(256);
-      try(
-        Connection postgresql = DriverManager.getConnection("jdbc:postgresql://"+Env.postgresql_url+":5432/analytics", Env.postgresql_user, Env.postgresql_pass);
-        Statement s = postgresql.createStatement();
-      ){
+      for (int i=0;i<Env.attempts;++i){
         try(
-          ResultSet r = s.executeQuery("SELECT \"id\", \"active\", \"name\" FROM quickbooks.jobs;");
+          Connection postgresql = DriverManager.getConnection("jdbc:postgresql://"+Env.postgresql_url+":5432/analytics", Env.postgresql_user, Env.postgresql_pass);
+          Statement s = postgresql.createStatement();
         ){
-          String str;
-          while (r.next()){
-            if ((str=r.getString(1))!=null){
-              str = str.toUpperCase().trim();
-              if (!str.isEmpty()){
-                jobs.put(str, new Job(str, r.getBoolean(2), r.getString(3)));
+          try(
+            ResultSet r = s.executeQuery("SELECT \"id\", \"active\", \"name\" FROM quickbooks.jobs;");
+          ){
+            String str;
+            while (r.next()){
+              if ((str=r.getString(1))!=null){
+                str = str.toUpperCase().trim();
+                if (!str.isEmpty()){
+                  jobs.put(str, new Job(str, r.getBoolean(2), r.getString(3)));
+                }
               }
             }
           }
-        }
-        try(
-          ResultSet r = s.executeQuery(query);
-        ){
-          while (r.next()){
-            tickets.add(new Ticket(r.getInt(1), r.getString(2), r.getString(3), r.getString(4), r.getString(5), r.getString(6)));
+          try(
+            ResultSet r = s.executeQuery(query);
+          ){
+            while (r.next()){
+              tickets.add(new Ticket(r.getInt(1), r.getString(2), r.getString(3), r.getString(4), r.getString(5), r.getString(6)));
+            }
           }
+          break;
+        }catch(Throwable t){
+          jobs.clear();
+          tickets.clear();
+          if (i+1==Env.attempts){
+            throw t;
+          }
+          Thread.sleep(5000);
         }
       }
       int i;

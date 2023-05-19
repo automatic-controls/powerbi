@@ -14,7 +14,7 @@
 [Google Analytics]: https://analytics.google.com/analytics/web/
 [Synchrony]: https://crn.prismhr.com/crn/auth/#/login?lang=en
 [Quickbooks]: https://quickbooks.intuit.com/
-[QQube]: https://clearify.com/wiki/view/1422/getting-started
+[QQube]: https://clearify.com/wiki/view/6172/advanced-users-and-power-bi-developers
 [Microsoft Teams]: https://www.microsoft.com/en-us/microsoft-teams/group-chat-software
 [GitHub]: https://github.com/automatic-controls/powerbi
 [Verizon Connect]: https://reveal.fleetmatics.com/login.aspx
@@ -31,6 +31,8 @@
     - [asana-ghost-clean](#asana-ghost-clean)
     - [postgresql-backup](#postgresql-backup)
     - [synchrony](#synchrony)
+      - [Reports: Benefits Billing Detail, Time Sheet, Scheduled Payments](#reports-benefits-billing-detail-time-sheet-scheduled-payments)
+      - [Labor Report](#labor-report)
     - [qqube-sync](#qqube-sync)
     - [qqube-validate](#qqube-validate)
     - [zendesk-validate](#zendesk-validate)
@@ -72,9 +74,8 @@ flowchart LR
   quickbooks-.->qqube-->qq_database-->powerbi
   qq_database-->qq_dataflows-->powerbi
   qq_database-->qq_script-->postgresql-->powerbi
-  verizon((Verizon\nConnect))-->ver_email{Scheduled\nEmail}-->ver_azure{{Azure Logic\nApp}}-->ver_script{{Batch File\nScript}}-->postgresql
-  synchrony((Synchrony))--->ftp{FTP}-->synch_script{{Batch File\nScript}}-->postgresql
-  bidtracer--->power_auto-->bid_upload-->postgresql
+  verizon((Verizon\nConnect)) & synchrony((Synchrony))-->ver_email{Scheduled\nEmail}-->ver_azure{{Azure Logic\nApp}}-->ver_script{{Batch File\nScript}}-->postgresql
+  synchrony & bidtracer--->power_auto-->bid_upload-->postgresql
   cradlepoint-...->cradle_script-->postgresql
   zendesk & pipedrive & ga & mc & asana-..->stitch--->postgresql
   postgresql<==>trigger{{PL/pgSQL Trigger\nFunctions}} & process{{Java Application\nScripts}}
@@ -118,7 +119,7 @@ These languages are listed in approximate order of their importance. You should 
 
 All scripts and power BI automation are based out of the **ACES-Utility2** server. When connected to the ACES network, you can RDP into the server using the provided credentials. Be sure to use the **AUTOMATICCONTRO** domain. Most scripts on the server are triggered using scheduled tasks.
 
-When errors occur, scripts are typically configured to send email notifications. There are four places required to change the recipients of these notifications. The first place is the `error_email` variable in the *./env_vars.bat* script located at the root of this repository. The second place is in the [Power Automate] cloud flow named *Power BI notifications forwarding*. The third place is in the [Power Automate] desktop flow named *Bidtracer* on **ACES-Utility2**. The fourth place is in the Python source code of a function app, *acesfuncy1 &#8594; cradlepointAPIExtract*, on [Azure Portal].
+When errors occur, scripts are typically configured to send email notifications. There are four places required to change the recipients of these notifications. The first place is the `error_email` variable in the *./env_vars.bat* script located at the root of this repository. The second place is in all the [Power Automate] cloud flows (*Power BI notifications forwarding*, *Bidtracer Trigger*, and *Synchrony Trigger*). The third place is in all the [Power Automate] desktop flows on **ACES-Utility2** (*Bidtracer* and *Synchrony*). The fourth place is in the Python source code of a function app, *acesfuncy1 &#8594; cradlepointAPIExtract*, on [Azure Portal].
 
 Most data is sent to a PostgreSQL database for processing and historical storage before Power BI reports ever touch it. I would suggest inspecting this database with [Azure Data Studio](https://azure.microsoft.com/en-us/products/data-studio/) to get familiar with its structure. If you're accessing the database from an unknown IP, you'll need to add a firewall rule in the [Azure Portal].
 
@@ -176,7 +177,28 @@ If an error occurs at any step in the process, the batch script is configured to
 
 ### [synchrony](./synchrony/)
 
-This data flow has not been setup yet. It is expected that [Synchrony] reports (in CSV, XLS, or XLSX format) will be sent to us daily through an FTP server. Then a batch file and/or Java application will process and upload the data to the PostgreSQL database. There exists a PostgreSQL trigger on the timesheet table which sets a `last_modified` timestamp on each row: [*./synchrony/trigger.sql*](./synchrony/trigger.sql).
+The purpose of this pipeline is to gather data from [Synchrony] and upload it to the PostgreSQL database. Collected data includes payroll, employee compensation, and timecards. There are two mechanisms for retrieving data from Synchrony. Some reports are sent to use using scheduled emails and others are retrieved using [Power Automate].
+
+#### Reports: Benefits Billing Detail, Time Sheet, Scheduled Payments
+
+1. <powerbi@automaticcontrols.net> typically receives three emails from Synchrony (informer@prismhr.com) every week on Tuesday between 4:00AM and 6:00AM. The precise schedule is 5:00AM on the day after a payroll has been finalized, so emails could come across any day if payroll is finalized at a non-standard time. Each email contains one report in CSV format.
+2. The **synchrony-email-capture** logic app on [Azure Portal] captures emails from Synchrony with subject containing the phrase: *Scheduled Report*.
+3. Attachments from captured emails are saved to *./synchrony/\*.csv* on the **ACES-Utility2** computer.
+4. Captured emails are moved to the *deleted* mailbox.
+5. A scheduled task (daily at 6:00AM) ON **ACES-Utility2** with name *SynchronyDataImport* executes a batch script: [*./synchrony/import.bat*](./synchrony/import.bat).
+6. The batch script uploads each CSV file attachment to the appropriate table in the PostgreSQL database: *payroll.benefits* or *payroll.compensation*. Duplicate entries are overwritten when necessary.
+
+If an error occurs at any step in the process, the batch script is configured to send email notifications. Detailed error information can be found in *./synchrony/log.txt*.
+
+#### Labor Report
+
+1. A [Power Automate] cloud flow (*Synchrony Trigger*) initiates a desktop flow (*Synchrony*) daily at 3:00AM.
+2. The desktop flow navigates to <https://cornerstoneemploy.payrollservers.us/pg/Login.aspx> and downloads 14 CSV reports (corresponding to the last 2 weeks of data).
+3. The desktop flow initiates a batch script: [*./synchrony/labor_report.bat*](./synchrony/labor_report.bat).
+4. The batch script uploads each CSV file to the PostgreSQL database and overwrites rows according to date.
+5. A PostgreSQL trigger is invoked to set the last modified date: [*./synchrony/trigger.sql*](./synchrony/trigger.sql).
+
+If an error occurs at any step in the process, the batch script is configured to send email notifications. Detailed error information can be found in *./synchrony/labor_log.txt*.
 
 ### [qqube-sync](./qqube-sync/)
 
@@ -272,6 +294,7 @@ This section describes a few prerequisites for getting the scripts in this repos
 
 ```bat
 set "lib=%~dp0lib"
+set "attempts=3"
 set "pbi_email=pbi@email.com"
 set "pbi_password=12345678"
 set "error_email=abcdefghijk@amer.teams.ms;username@automaticcontrols.net"

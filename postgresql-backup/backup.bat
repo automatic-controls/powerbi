@@ -8,8 +8,9 @@ set /a max=5
 :: List of tables to backup
 set "table[1]=bidtracer.alloc"
 set "table[2]=quickbooks.jobs"
-set "table[3]=timestar.compensation"
-set "table[4]=timestar.timesheets_processed"
+set "table[3]=timestar.timesheets_processed"
+set "table[4]=payroll.benefits"
+set "table[5]=payroll.compensation"
 
 
 set "stamp=%date:~-4%-%date:~-10,2%-%date:~-7,2%"
@@ -27,7 +28,7 @@ set /a len-=1
   for /L %%i in (1,1,%len%) do (
     set "folder=%~dp0!table[%%i]!"
     if exist "!folder!" (
-      set /a num=1
+      set /a num=0
       for /f "usebackq tokens=* delims=" %%j in (`dir /B /O:-D /T:C "!folder!"`) do (
         set /a num+=1
         if !num! GTR %max% del /F "!folder!\%%j" >nul
@@ -36,8 +37,20 @@ set /a len-=1
       mkdir "!folder!" >nul
     )
     if exist "%tmpFile%" del /F "%tmpFile%" >nul
-    psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q --csv -o "%tmpFile%" -c "SELECT * FROM !table[%%i]!"
-    if !ERRORLEVEL! EQU 0 (
+    set suc=1
+    for /l %%i in (1,1,%attempts%) do (
+      if !suc! NEQ 0 (
+        if %%i EQU 1 (
+          psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q --csv -o "%tmpFile%" -c "SELECT * FROM !table[%%i]!"
+          set "suc=!ErrorLevel!"
+        ) else (
+          timeout /nobreak /t 5 >nul
+          psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q --csv -o "%tmpFile%" -c "SELECT * FROM !table[%%i]!" >nul 2>&1
+          set "suc=!ErrorLevel!"
+        )
+      )
+    )
+    if !suc! EQU 0 (
       if exist "%tmpFile%" (
         move /Y "%tmpFile%" "!folder!/%stamp%.csv" >nul
       )

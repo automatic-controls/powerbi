@@ -8,7 +8,7 @@ import java.time.*;
 import java.time.format.*;
 public class Main {
   public final static DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss").withZone(ZoneId.systemDefault());
-  public final static long WORKSPACE_GID = 155477067182454L;
+  public final static String WORKSPACE_GID = "155477067182454";
   public final static long LIMIT = 10000000L;
   public static int projectCount = -1;
   public static long[] projectGids;
@@ -74,10 +74,11 @@ public class Main {
           Arrays.fill(projectFlags,(byte)0);
           System.out.println("Establishing connection to Asana...");
           Client cl = Client.accessToken(Env.asana_token);
+          cl.logAsanaChangeWarnings = false;
           {
             int i;
             System.out.println("Retrieving projects from Asana...");
-            CollectionRequest<Project> req = cl.projects.findAll().query("workspace",WORKSPACE_GID).query("opt_fields",new String[]{"gid"});
+            CollectionRequest<Project> req = cl.projects.findByWorkspace(WORKSPACE_GID);
             for (Project p:req){
               i = Arrays.binarySearch(projectGids, 0, projectCount, Long.parseLong(p.gid));
               if (i>=0){
@@ -190,7 +191,7 @@ public class Main {
             for (int k=0;k<projectCount;++k){
               if (projectFlags[k]==1){
                 try{
-                  req = cl.tasks.findAll().query("project",projectGids[k]).query("opt_fields",new String[]{"gid"});
+                  req = cl.tasks.findByProject(String.valueOf(projectGids[k]));
                   for (Task t:req){
                     i = Arrays.binarySearch(taskGids, 0, taskCount, Long.parseLong(t.gid));
                     if (i>=0){

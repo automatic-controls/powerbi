@@ -36,8 +36,20 @@ exit /b
     exit /b 1
   )
   set "PGPASSWORD=!postgresql_pass!"
-  psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q -c "\copy bidtracer.alloc (bid_id, bid_title, cost_code, cost_description, hours, amount) from '%estimateFile%' with DELIMITER ',' CSV HEADER"
-  if "%ERRORLEVEL%" NEQ "0" (
+  set suc=1
+  for /l %%i in (1,1,%attempts%) do (
+    if !suc! NEQ 0 (
+      if %%i EQU 1 (
+        psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q -c "\copy bidtracer.alloc (bid_id, bid_title, cost_code, cost_description, hours, amount) from '%estimateFile%' with DELIMITER ',' CSV HEADER"
+        set "suc=!ErrorLevel!"
+      ) else (
+        timeout /nobreak /t 5 >nul
+        psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q -c "\copy bidtracer.alloc (bid_id, bid_title, cost_code, cost_description, hours, amount) from '%estimateFile%' with DELIMITER ',' CSV HEADER" >nul 2>&1
+        set "suc=!ErrorLevel!"
+      )
+    )
+  )
+  if !suc! NEQ 0 (
     set "err=Failed to import estimate data file into database."
     exit /b 1
   )

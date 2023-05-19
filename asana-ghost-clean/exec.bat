@@ -3,8 +3,18 @@ call "%~dp0../env_vars.bat"
 setlocal EnableDelayedExpansion
 set "script=%~dp0mail_script.ps1"
 (
-  java -cp "%~dp0asana-ghost-clean.jar;%lib%\*;" Main
-  if !ERRORLEVEL! NEQ 0 call :email
+  set suc=1
+  for /l %%i in (1,1,%attempts%) do (
+    if !suc! NEQ 0 (
+      java -cp "%~dp0asana-ghost-clean.jar;%lib%\*;" Main
+      set "suc=!ErrorLevel!"
+      if !suc! NEQ 0 (
+        echo Attempt %%i of %attempts% failed.
+        timeout /nobreak /t 5 >nul
+      )
+    )
+  )
+  if !suc! NEQ 0 call :email
 ) >> "%~dp0log.txt" 2>&1
 exit
 
