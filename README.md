@@ -303,6 +303,8 @@ set "postgresql_url=postgresql.database.net"
 set "postgresql_user=username"
 set "postgresql_pass=12345678"
 set "asana_token=1/1111111111:ffffffffffffff"
+set "twp_api_secret=abcdefghijklmnopqrstuvwxyz012346789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+set "twp_site_id=000000"
 ```
 
 4. Execute [*./collect.bat*](./collect.bat) to download required dependencies.
