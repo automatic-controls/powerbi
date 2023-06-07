@@ -53,7 +53,7 @@ exit /b
         psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q -c "\copy verizon.movements (vehicle_number, vehicle_name, registration_number, driver_number, driver_name, employee_id, datetime, timezone_offset, timezone, status, latitude, longitude, address, city, state, postal_code, speed, speed_limit, heading, odometer, delta_time_text, delta_time_seconds, delta_distance, accumulated_time_text, accumulated_time_seconds, accumulated_distance, place_id, place_name, ignition, daily_accumulated_distance, esn, is_asset, fuel_type) from '%reportMovements%' with DELIMITER ',' CSV HEADER"
         set "suc=!ErrorLevel!"
       ) else (
-        timeout /nobreak /t 5 >nul
+        timeout /nobreak /t 300 >nul
         psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q -c "\copy verizon.movements (vehicle_number, vehicle_name, registration_number, driver_number, driver_name, employee_id, datetime, timezone_offset, timezone, status, latitude, longitude, address, city, state, postal_code, speed, speed_limit, heading, odometer, delta_time_text, delta_time_seconds, delta_distance, accumulated_time_text, accumulated_time_seconds, accumulated_distance, place_id, place_name, ignition, daily_accumulated_distance, esn, is_asset, fuel_type) from '%reportMovements%' with DELIMITER ',' CSV HEADER" >nul 2>&1
         set "suc=!ErrorLevel!"
       )
@@ -70,7 +70,7 @@ exit /b
         psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q -c "\copy verizon.speeding (date, time, driver, vehicle, speed_limit, limit_source, speed, percentage_over, location, latitude, longitude, timezone, driver_number) from '%reportSpeeding%' with DELIMITER ',' CSV HEADER"
         set "suc=!ErrorLevel!"
       ) else (
-        timeout /nobreak /t 5 >nul
+        timeout /nobreak /t 300 >nul
         psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q -c "\copy verizon.speeding (date, time, driver, vehicle, speed_limit, limit_source, speed, percentage_over, location, latitude, longitude, timezone, driver_number) from '%reportSpeeding%' with DELIMITER ',' CSV HEADER" >nul 2>&1
         set "suc=!ErrorLevel!"
       )
@@ -87,7 +87,7 @@ exit /b
         psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q -c "\copy verizon.incidents (vehicle, driver, datetime, event, location, initial_speed, duration, severity) from '%reportIncidents%' with DELIMITER ',' CSV HEADER"
         set "suc=!ErrorLevel!"
       ) else (
-        timeout /nobreak /t 5 >nul
+        timeout /nobreak /t 300 >nul
         psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q -c "\copy verizon.incidents (vehicle, driver, datetime, event, location, initial_speed, duration, severity) from '%reportIncidents%' with DELIMITER ',' CSV HEADER" >nul 2>&1
         set "suc=!ErrorLevel!"
       )
@@ -104,7 +104,7 @@ exit /b
         psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q -c "\copy verizon.services (service_name, vehicle_name, odometer, days_left, due_date, distance_left, engine_hours_left) from '%reportServices%' with DELIMITER ',' CSV HEADER"
         set "suc=!ErrorLevel!"
       ) else (
-        timeout /nobreak /t 5 >nul
+        timeout /nobreak /t 300 >nul
         psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q -c "\copy verizon.services (service_name, vehicle_name, odometer, days_left, due_date, distance_left, engine_hours_left) from '%reportServices%' with DELIMITER ',' CSV HEADER" >nul 2>&1
         set "suc=!ErrorLevel!"
       )

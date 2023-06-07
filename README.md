@@ -32,7 +32,7 @@
     - [postgresql-backup](#postgresql-backup)
     - [synchrony](#synchrony)
       - [Reports: Benefits Billing Detail, Time Sheet, Scheduled Payments](#reports-benefits-billing-detail-time-sheet-scheduled-payments)
-      - [Labor Report](#labor-report)
+    - [timeworksplus](#timeworksplus)
     - [qqube-sync](#qqube-sync)
     - [qqube-validate](#qqube-validate)
     - [zendesk-validate](#zendesk-validate)
@@ -75,7 +75,8 @@ flowchart LR
   qq_database-->qq_dataflows-->powerbi
   qq_database-->qq_script-->postgresql-->powerbi
   verizon((Verizon\nConnect)) & synchrony((Synchrony))-->ver_email{Scheduled\nEmail}-->ver_azure{{Azure Logic\nApp}}-->ver_script{{Batch File\nScript}}-->postgresql
-  synchrony & bidtracer--->power_auto-->bid_upload-->postgresql
+  synchrony-.->sync_java_scripts{{Java Application\nScripts}}-->postgresql
+  bidtracer--->power_auto-->bid_upload-->postgresql
   cradlepoint-...->cradle_script-->postgresql
   zendesk & pipedrive & ga & mc & asana-..->stitch--->postgresql
   postgresql<==>trigger{{PL/pgSQL Trigger\nFunctions}} & process{{Java Application\nScripts}}
@@ -177,7 +178,7 @@ If an error occurs at any step in the process, the batch script is configured to
 
 ### [synchrony](./synchrony/)
 
-The purpose of this pipeline is to gather data from [Synchrony] and upload it to the PostgreSQL database. Collected data includes payroll, employee compensation, and timecards. There are two mechanisms for retrieving data from Synchrony. Some reports are sent to use using scheduled emails and others are retrieved using [Power Automate].
+The purpose of this pipeline is to gather data from [Synchrony] and upload it to the PostgreSQL database. Collected data includes payroll, employee compensation, and timecards. There are two mechanisms for retrieving data from Synchrony. The first mechanism documented here encapsulates data sent to us with scheduled emails. The second mechanism is documented in the [timeworksplus](#timeworksplus) section.
 
 #### Reports: Benefits Billing Detail, Time Sheet, Scheduled Payments
 
@@ -190,15 +191,15 @@ The purpose of this pipeline is to gather data from [Synchrony] and upload it to
 
 If an error occurs at any step in the process, the batch script is configured to send email notifications. Detailed error information can be found in *./synchrony/log.txt*.
 
-#### Labor Report
+### [timeworksplus](./timeworksplus/)
 
-1. A [Power Automate] cloud flow (*Synchrony Trigger*) initiates a desktop flow (*Synchrony*) daily at 3:00AM.
-2. The desktop flow navigates to <https://cornerstoneemploy.payrollservers.us/pg/Login.aspx> and downloads 14 CSV reports (corresponding to the last 2 weeks of data).
-3. The desktop flow initiates a batch script: [*./synchrony/labor_report.bat*](./synchrony/labor_report.bat).
-4. The batch script uploads each CSV file to the PostgreSQL database and overwrites rows according to date.
-5. A PostgreSQL trigger is invoked to set the last modified date: [*./synchrony/trigger.sql*](./synchrony/trigger.sql).
+The purpose of this Java application script is to retrieve [Synchrony] timecard data from the [TimeWorksPlus API](https://twpapi.payrollservers.us/swagger/ui/index#!) and upload it to the PostgreSQL database.
 
-If an error occurs at any step in the process, the batch script is configured to send email notifications. Detailed error information can be found in *./synchrony/labor_log.txt*.
+1. A scheduled task (daily at 3:00AM) on **ACES-Utility2** with name *timeworksplus-synchrony-import* executes a batch scripts: [*./timeworksplus/exec.bat*](./timeworksplus/exec.bat).
+2. The batch script executes a Java application *./timeworksplus/timeworksplus.jar*.
+3. The Java application queries the TimeWorksPlus API and uploads the resulting data into the PostgreSQL database.
+
+If an error occurs at any step in the process, the batch script is configured to send email notifications. Detailed error information can be found in *./timeworksplus/log.txt*.
 
 ### [qqube-sync](./qqube-sync/)
 

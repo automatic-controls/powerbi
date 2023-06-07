@@ -1,5 +1,8 @@
 @echo off
 title Synchrony Import Script
+
+:: NOTE - this has been depreciated in favor of the timeworksplus API integration script
+
 call "%~dp0../env_vars.bat"
 setlocal EnableDelayedExpansion
 cd "%~dp0"
@@ -41,7 +44,7 @@ exit /b
           psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q -1 -c "\ir script.sql"
           set "suc=!ErrorLevel!"
         ) else (
-          timeout /nobreak /t 5 >nul
+          timeout /nobreak /t 300 >nul
           psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q -1 -c "\ir script.sql" >nul 2>&1
           set "suc=!ErrorLevel!"
         )

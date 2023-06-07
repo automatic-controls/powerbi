@@ -79,7 +79,7 @@ exit /b
           psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q -1 -c "\ir script.sql"
           set "suc=!ErrorLevel!"
         ) else (
-          timeout /nobreak /t 5 >nul
+          timeout /nobreak /t 300 >nul
           psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q -1 -c "\ir script.sql" >nul 2>&1
           set "suc=!ErrorLevel!"
         )
@@ -125,7 +125,7 @@ exit /b
           psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q -1 -c "\ir script.sql"
           set "suc=!ErrorLevel!"
         ) else (
-          timeout /nobreak /t 5 >nul
+          timeout /nobreak /t 300 >nul
           psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q -1 -c "\ir script.sql" >nul 2>&1
           set "suc=!ErrorLevel!"
         )
@@ -169,7 +169,7 @@ exit /b
           psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q -1 -c "\ir script.sql"
           set "suc=!ErrorLevel!"
         ) else (
-          timeout /nobreak /t 5 >nul
+          timeout /nobreak /t 300 >nul
           psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q -1 -c "\ir script.sql" >nul 2>&1
           set "suc=!ErrorLevel!"
         )

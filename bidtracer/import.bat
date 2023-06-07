@@ -43,7 +43,7 @@ exit /b
         psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q -c "\copy bidtracer.alloc (bid_id, bid_title, cost_code, cost_description, hours, amount) from '%estimateFile%' with DELIMITER ',' CSV HEADER"
         set "suc=!ErrorLevel!"
       ) else (
-        timeout /nobreak /t 5 >nul
+        timeout /nobreak /t 300 >nul
         psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q -c "\copy bidtracer.alloc (bid_id, bid_title, cost_code, cost_description, hours, amount) from '%estimateFile%' with DELIMITER ',' CSV HEADER" >nul 2>&1
         set "suc=!ErrorLevel!"
       )

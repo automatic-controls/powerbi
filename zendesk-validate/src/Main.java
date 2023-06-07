@@ -55,7 +55,7 @@ public class Main {
           if (i+1==Env.attempts){
             throw t;
           }
-          Thread.sleep(5000);
+          Thread.sleep(300000L);
         }
       }
       int i;

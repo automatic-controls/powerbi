@@ -10,7 +10,7 @@ set "script=%~dp0mail_script.ps1"
       set "suc=!ErrorLevel!"
       if !suc! NEQ 0 (
         echo Attempt %%i of %attempts% failed.
-        timeout /nobreak /t 5 >nul
+        timeout /nobreak /t 300 >nul
       )
     )
   )

@@ -44,7 +44,7 @@ set /a len-=1
           psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q --csv -o "%tmpFile%" -c "SELECT * FROM !table[%%i]!"
           set "suc=!ErrorLevel!"
         ) else (
-          timeout /nobreak /t 5 >nul
+          timeout /nobreak /t 300 >nul
           psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q --csv -o "%tmpFile%" -c "SELECT * FROM !table[%%i]!" >nul 2>&1
           set "suc=!ErrorLevel!"
         )
