@@ -9,4 +9,7 @@ public class TimecardEntry {
   public void setDate(String date) throws IllegalArgumentException {
     this.date = Date.valueOf(date);
   }
+  public @Override String toString(){
+    return date+", "+pay_type+", "+job+", "+work_category+", "+(seconds/3600.0)+", "+notes;
+  }
 }

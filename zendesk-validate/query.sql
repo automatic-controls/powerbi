@@ -3,7 +3,7 @@ WITH "users" AS (
     "id",
     "name",
     "email"
-  FROM zd.users
+  FROM zendesk_v2.users
   WHERE "id" IS NOT NULL
   AND "name" IS NOT NULL
   AND "email" IS NOT NULL
@@ -23,7 +23,7 @@ FROM (
     "subject",
     "status",
     "organization_id"
-  FROM zd.tickets
+  FROM zendesk_v2.tickets
   WHERE "status" = 'solved'
 ) "tickets"
 INNER JOIN "users" "assignee"
@@ -32,11 +32,11 @@ LEFT JOIN (
   SELECT
     _sdc_source_key_id AS "ticket_id",
     UPPER(value__st) AS "value"
-  FROM zd.tickets__custom_fields
+  FROM zendesk_v2.tickets__custom_fields
   WHERE id=22017617
   AND value__st IS NOT NULL
 ) "job_id"
 ON "tickets"."id" = "job_id"."ticket_id"
-LEFT JOIN ( SELECT "id", "name" FROM zd.organizations ) "orgs"
+LEFT JOIN ( SELECT "id", "name" FROM zendesk_v2.organizations ) "orgs"
 ON "orgs"."id" = "tickets"."organization_id"
 ORDER BY "tickets"."id" DESC;

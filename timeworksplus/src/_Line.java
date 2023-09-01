@@ -18,9 +18,9 @@ public class _Line {
     if (e.work_category==null){
       e.work_category = "NO CATEGORY SELECTED";
     }
-    String s = Variables.get("SECONDS");
+    String s = Seconds;
     if (s==null){
-      s = Seconds;
+      s = Variables.get("SECONDS");
     }
     if (s==null){
       return null;

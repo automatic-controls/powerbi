@@ -8,6 +8,7 @@ import java.time.format.*;
 import com.google.gson.*;
 import java.io.*;
 public class TimeCardAPI {
+  private final static boolean everything = false;
   private static String TODAY = null;
   private static String ONE_WEEK_AGO = null;
   private static String TWO_WEEKS_AGO = null;
@@ -18,8 +19,12 @@ public class TimeCardAPI {
     TODAY = DateTimeFormatter.ISO_LOCAL_DATE.format(d);
     d = d.plusDays(-7);
     ONE_WEEK_AGO = DateTimeFormatter.ISO_LOCAL_DATE.format(d);
-    d = d.plusDays(-13);
-    TWO_WEEKS_AGO = DateTimeFormatter.ISO_LOCAL_DATE.format(d);
+    if (everything){
+      TWO_WEEKS_AGO = DateTimeFormatter.ISO_LOCAL_DATE.format(LocalDate.of(2023,1,1));
+    }else{
+      d = d.plusDays(-13);
+      TWO_WEEKS_AGO = DateTimeFormatter.ISO_LOCAL_DATE.format(d);
+    }
   }
   private final static CharsetDecoder jsonDecoder = java.nio.charset.StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.IGNORE).onUnmappableCharacter(CodingErrorAction.IGNORE);
   private final static int timeout = 30000;
@@ -42,12 +47,25 @@ public class TimeCardAPI {
       up.deleteUnlistedEmployees(employees, java.sql.Date.valueOf(TWO_WEEKS_AGO), java.sql.Date.valueOf(TODAY));
       ArrayList<TimecardEntry> entries;
       for (String code:employees){
-        entries = getTimecard(code, TODAY);
-        up.submit(entries, startDate, endDate, code, employeeName);
-        entries = getTimecard(code, ONE_WEEK_AGO);
-        up.submit(entries, startDate, endDate, code, employeeName);
-        entries = getTimecard(code, TWO_WEEKS_AGO);
-        up.submit(entries, startDate, endDate, code, employeeName);
+        if (everything){
+          LocalDate d = LocalDate.of(2023,1,1);
+          LocalDate lim = LocalDate.now();
+          while (true){
+            entries = getTimecard(code, DateTimeFormatter.ISO_LOCAL_DATE.format(d));
+            up.submit(entries, startDate, endDate, code, employeeName);
+            if (d.isAfter(lim) || d.isEqual(lim)){
+              break;
+            }
+            d = d.plusDays(7);
+          }
+        }else{
+          entries = getTimecard(code, TODAY);
+          up.submit(entries, startDate, endDate, code, employeeName);
+          entries = getTimecard(code, ONE_WEEK_AGO);
+          up.submit(entries, startDate, endDate, code, employeeName);
+          entries = getTimecard(code, TWO_WEEKS_AGO);
+          up.submit(entries, startDate, endDate, code, employeeName);
+        }
       }
     }
   }
@@ -95,6 +113,7 @@ public class TimeCardAPI {
           }
         }
         ++len;
+        //System.out.println(new String(json,0,len));
         final _Root root = new Gson().fromJson(new CharArrayReader(json,0,len), _Root.class);
         json = null;
         startDate = java.sql.Date.valueOf(root.PayPeriodBeginDate);

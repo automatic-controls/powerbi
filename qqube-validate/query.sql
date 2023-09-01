@@ -7,5 +7,7 @@ SELECT
   "Job Custom Field 02" AS "billed_to_date",
   "Job Custom Field 04" AS "previous_invoices"
 FROM QQubeUser.vd_Job
-  WHERE "Job Start Date" IS NOT NULL
-  OR "Job End Date" IS NOT NULL;
+  WHERE (
+    "Job Start Date" IS NOT NULL
+    OR "Job End Date" IS NOT NULL
+  ) AND "JobTimeModified" >= DATEADD(month,-1,NOW())

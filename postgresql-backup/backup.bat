@@ -38,9 +38,9 @@ set /a len-=1
     )
     if exist "%tmpFile%" del /F "%tmpFile%" >nul
     set suc=1
-    for /l %%i in (1,1,%attempts%) do (
+    for /l %%j in (1,1,%attempts%) do (
       if !suc! NEQ 0 (
-        if %%i EQU 1 (
+        if %%j EQU 1 (
           psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q --csv -o "%tmpFile%" -c "SELECT * FROM !table[%%i]!"
           set "suc=!ErrorLevel!"
         ) else (
