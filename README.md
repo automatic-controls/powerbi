@@ -247,6 +247,8 @@ The purpose of this script is to gather data from [Bidtracer] and upload it to t
 
 If an error occurs at any step in the process, the batch script is configured to send email notifications. Detailed error information can be found in *./bidtracer/log.txt*.
 
+**NOTE** - The cloud flow stopped working recently, and it is on my TODO list to create another BidTracer integration. As of now, Desiree manually initiates the Power Automate desktop flow when she wants it updated.
+
 ### [verizon](./verizon/)
 
 The purpose of this script is to gather data from [Verizon Connect] and upload it to the PostgreSQL database. Collected data includes GPS ping locations on ACES vehicles (taken every 30 seconds). Additionally, safety violations such as speeding and hard-braking are recorded.
