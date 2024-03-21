@@ -44,7 +44,7 @@
 
 ## Data Flowchart
 
-Circle nodes denote a user-facing endpoint. Cylinder nodes denote a type of data storage container. Hexagon nodes specify a data processing machanism where we have complete, fine-grained control over all steps in the procedure. Rhombus nodes indicate a data processing mechanism over which we do not have complete control. Dotted arrows represent data transfers occurring through a RESTful web API. The exception to this rule is [Quickbooks Desktop][Quickbooks] which exposes data through an SDK. However, it is our intention to migrate to [Quickbooks Online][Quickbooks] in a year or two, which does include a RESTful web API.
+Circle nodes denote a user-facing endpoint. Cylinder nodes denote a type of data storage container. Hexagon nodes specify a data processing machanism where we have complete, fine-grained control over all steps in the procedure. Rhombus nodes indicate a data processing mechanism over which we do not have complete control. Dotted arrows represent data transfers occurring through a RESTful web API. The exception to this rule is [Quickbooks Desktop][Quickbooks] which exposes data through an SDK. However, it is our intention to migrate to [Quickbooks Online][Quickbooks] very soon, which does include a RESTful web API.
 
 ```mermaid
 flowchart LR
@@ -122,6 +122,8 @@ All scripts and power BI automation are based out of the **ACES-Utility2** serve
 
 When errors occur, scripts are typically configured to send email notifications. There are four places required to change the recipients of these notifications. The first place is the `error_email` variable in the *./env_vars.bat* script located at the root of this repository. The second place is in all the [Power Automate] cloud flows (*Power BI notifications forwarding* and *Bidtracer Trigger*). The third place is in all the [Power Automate] desktop flows on **ACES-Utility2** (*Bidtracer*). The fourth place is in the Python source code of a function app, *acesfuncy1 &#8594; cradlepointAPIExtract*, on [Azure Portal].
 
+Recently, I created an email group, <pbinotify@automaticcontrols.net>, and set all 4 locations to point to this. So you are better off just changing the members of this group to add/remove PBI notification recipients.
+
 Most data is sent to a PostgreSQL database for processing and historical storage before Power BI reports ever touch it. I would suggest inspecting this database with [Azure Data Studio](https://azure.microsoft.com/en-us/products/data-studio/) to get familiar with its structure. If you're accessing the database from an unknown IP, you'll need to add a firewall rule in the [Azure Portal].
 
 ![](images/postgresql_firewall.png)
@@ -149,13 +151,13 @@ After publishing new Power BI reports, you will want to attempt to manually refr
 
 | Data Source | Integration Schedule |
 | - | - |
-| [Asana] | Every 6 hours |
+| [Asana] | Every 24 hours |
 | [Zendesk] | Every 12 hours |
 | [Pipedrive] | Every 12 hours |
-| [Mailchimp] | Disabled |
+| [Mailchimp] | Every 12 hours |
 | [Google Analytics] | Disabled |
 
-There are a few problems with the Stitch integrations. Since the Asana integration takes a long time (multiple hours) to synchronize everything, it is on my TODO list to create a Java application which replaces this functionality. When nodes are deleted from the source, Stitch will not delete them from the database. Stitch only updates existing nodes or creates new nodes. This is most problematic for Asana, which is why I created a Java application to delete these ghost nodes from the Asana database.
+There are a few problems with the Stitch integrations. Since the Asana integration takes a long time to synchronize everything, it is on my TODO list to create a Java application which replaces this functionality. When nodes are deleted from the source, Stitch will not delete them from the database. Stitch only updates existing nodes or creates new nodes. This is most problematic for Asana, which is why I created a Java application to delete these ghost nodes from the Asana database.
 
 ### [asana-ghost-clean](./asana-ghost-clean/)
 
