@@ -45,7 +45,7 @@ exit /b
     echo !err!
     exit /b 1
   )
-  curl --fail --silent --output "%dst%" "%url%"
+  curl --location --fail --silent --output "%dst%" "%url%"
   if %ErrorLevel% NEQ 0 (
     set "err=Failed to download data from URL."
     echo !err!

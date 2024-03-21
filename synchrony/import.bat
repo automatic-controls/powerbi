@@ -11,7 +11,7 @@ set "script=%~dp0script.sql"
 set "mscript=%~dp0mail_script.ps1"
 set "stamps=%~dp0stamps.bat"
 set "PGPASSWORD=!postgresql_pass!"
-set /a error_days=10
+set /a error_days=14
 
 set exists_benefits_csv=0
 set exists_timesheet_csv=0
@@ -70,6 +70,7 @@ exit /b
   if "%exists_alloc_csv%" EQU "1" (
     set alloc_days=%days%
     (
+      echo \set ON_ERROR_STOP true
       for %%i in ("%alloc_csv%") do (
         echo \copy payroll.compensation ^(payroll_number, employee_id, employee_name, charge_date, location, position, pay_code, pay_description, shift, hours_units_paid, hourly_rate, hours_worked, pay_amount^) from '%%~fi' with DELIMITER ',' CSV HEADER;
       )
@@ -117,7 +118,11 @@ exit /b
   )
   if "%exists_timesheet_csv%" EQU "1" (
     set timesheet_days=%days%
+    for %%i in ("%timesheet_csv%") do (
+      PowerShell -NoLogo -File "%~dp0preprocess.ps1" -file "%%~fi"
+    )
     (
+      echo \set ON_ERROR_STOP true
       for %%i in ("%timesheet_csv%") do (
         echo \copy payroll.compensation ^(payroll_number, employee_id, employee_name, charge_date, location, position, pay_code, pay_description, shift, hours_units_paid, hourly_rate, hours_worked, pay_amount^) from '%%~fi' with DELIMITER ',' CSV HEADER;
       )
@@ -339,6 +344,7 @@ exit /b
   if "%exists_benefits_csv%" EQU "1" (
     set benefits_days=%days%
     (
+      echo \set ON_ERROR_STOP true
       for %%i in ("%benefits_csv%") do (
         echo \copy payroll.benefits ^(pay_date, employee_id, employee_name, plan_id, plan_description, amount_billed, employee_contribution, net_amount_billed^) from '%%~fi' with DELIMITER ',' CSV HEADER;
       )
