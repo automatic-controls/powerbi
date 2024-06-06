@@ -7,3 +7,6 @@ lib
 postgresql-backup/*/
 synchrony/stamps.bat
 synchrony/data
+README.html
+webctrl-monitor/state.txt
+webctrl-monitor/sites.txt
