@@ -4,15 +4,18 @@ call "%~dp0../env_vars.bat"
 setlocal EnableDelayedExpansion
 cd "%~dp0"
 
-set "benefits_csv=%~dp0ACES - Benefits Billing Detail Report*.csv"
-set "timesheet_csv=%~dp0ACES - Time Sheet Report*.csv"
-set "alloc_csv=%~dp0ACES - Scheduled Payments*.csv"
+set "src=PBI_Sharepoint:\Avant-Garde\script-cache\synchrony"
+set "dst=%~dp0data"
+set "benefits_csv=%dst%\ACES - Benefits Billing Detail Report*.csv"
+set "timesheet_csv=%dst%\ACES - Time Sheet Report*.csv"
+set "alloc_csv=%dst%\ACES - Scheduled Payments*.csv"
 set "script=%~dp0script.sql"
 set "mscript=%~dp0mail_script.ps1"
 set "stamps=%~dp0stamps.bat"
 set "PGPASSWORD=!postgresql_pass!"
 set /a error_days=14
 
+rclone sync --ignore-checksum --ignore-size --retries 5 --retries-sleep 500ms "%src%" "%dst%"
 set exists_benefits_csv=0
 set exists_timesheet_csv=0
 set exists_alloc_csv=0
@@ -51,6 +54,7 @@ if exist "%stamps%" call "%stamps%"
       set x=1
       del /F "%%~fi" >nul 2>nul
     )
+    rclone delete --retries 5 --retries-sleep 500ms "%src%"
     if !x! EQU 1 (
       echo !date!-!time! - Import succeeded.
     ) else (
@@ -416,7 +420,23 @@ exit /b
 exit /b 0
 
 :email
-  echo Send-MailMessage -From "!pbi_email!" -To "!error_email!".Split^(";"^) -Subject "Synchrony Import Failure" -Body "%err%See the log file for more details." -SmtpServer "smtp-mail.outlook.com" -Port 587 -UseSsl -Credential ^(New-Object PSCredential^("!pbi_email!", ^(ConvertTo-SecureString "!pbi_password!" -AsPlainText -Force^)^)^)>"%mscript%"
-  PowerShell -NoLogo -File "%mscript%"
+  (
+    echo Send-MailMessage -From "!pbi_email!" -To "!error_email!".Split^(";"^) -Subject "Synchrony Import Failure" -Body "%err%See the log file for more details." -SmtpServer "smtp-mail.outlook.com" -Port 587 -UseSsl -Credential ^(New-Object PSCredential^("!pbi_email!", ^(ConvertTo-SecureString "!pbi_password!" -AsPlainText -Force^)^)^)
+    echo if ^( $? ^){ exit 0 }else{ exit 1 }
+  )>"%mscript%"
+  PowerShell -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%mscript%"
+  if %ErrorLevel% NEQ 0 (
+    echo [!date! - !time!] Failed to send email notification with 2 attempts left.>>"%~dp0log.txt"
+    timeout /t 5 /nobreak >nul
+    PowerShell -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%mscript%"
+    if !ErrorLevel! NEQ 0 (
+      echo [!date! - !time!] Failed to send email notification with 1 attempt left.>>"%~dp0log.txt"
+      timeout /t 5 /nobreak >nul
+      PowerShell -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%mscript%"
+      if !ErrorLevel! NEQ 0 (
+        echo [!date! - !time!] Failed to send email notification with 0 attempts left.>>"%~dp0log.txt"
+      )
+    )
+  )
   if exist "%mscript%" del /F "%mscript%" >nul
 exit /b 0

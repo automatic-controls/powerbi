@@ -88,20 +88,21 @@ timeout /t %interval% /nobreak >nul
 goto loop
 
 :email
-  echo [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12>"%mscript%"
-  echo Send-MailMessage -From "!pbi_email!" -To "!email_to!".Split^(";"^) -Subject "!email_subject!" -Body "!email_body!" -SmtpServer "%smtp_server%" -Port 587 -UseSsl -Credential ^(New-Object PSCredential^("!pbi_email!", ^(ConvertTo-SecureString "!pbi_password!" -AsPlainText -Force^)^)^)>>"%mscript%"
-  echo if ^( $? ^){ exit 0 }else{ exit 1 }>>"%mscript%"
-  PowerShell -NoLogo -File "%mscript%"
+  (
+    echo Send-MailMessage -From "!pbi_email!" -To "!email_to!".Split^(";"^) -Subject "!email_subject!" -Body "!email_body!" -SmtpServer "%smtp_server%" -Port 587 -UseSsl -Credential ^(New-Object PSCredential^("!pbi_email!", ^(ConvertTo-SecureString "!pbi_password!" -AsPlainText -Force^)^)^)
+    echo if ^( $? ^){ exit 0 }else{ exit 1 }
+  )>"%mscript%"
+  PowerShell -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%mscript%"
   if %ErrorLevel% NEQ 0 (
-    echo [!date! - !time!] Failed to send email notification with 2 attempts left.>>"%log%"
+    echo [!date! - !time!] Failed to send email notification with 2 attempts left.>>"%~dp0log.txt"
     timeout /t 5 /nobreak >nul
-    PowerShell -NoLogo -File "%mscript%"
+    PowerShell -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%mscript%"
     if !ErrorLevel! NEQ 0 (
-      echo [!date! - !time!] Failed to send email notification with 1 attempt left.>>"%log%"
+      echo [!date! - !time!] Failed to send email notification with 1 attempt left.>>"%~dp0log.txt"
       timeout /t 5 /nobreak >nul
-      PowerShell -NoLogo -File "%mscript%"
+      PowerShell -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%mscript%"
       if !ErrorLevel! NEQ 0 (
-        echo [!date! - !time!] Failed to send email notification with 0 attempts left.>>"%log%"
+        echo [!date! - !time!] Failed to send email notification with 0 attempts left.>>"%~dp0log.txt"
       )
     )
   )

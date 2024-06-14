@@ -129,7 +129,7 @@ public class Main {
         }
         sb.append("\n</table></div></body></html>");
         Emailer.init();
-        Emailer.send("dstclair@automaticcontrols.net,zdhom@automaticcontrols.net", "Zendesk Validation", sb.toString(), true);
+        Emailer.send("dstclair@automaticcontrols.net,zdhom@automaticcontrols.net,cvogt@automaticcontrols.net", "Zendesk Validation", sb.toString(), true);
       }
       System.out.println("Application terminated successfully.");
       return true;
