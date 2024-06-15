@@ -29,6 +29,7 @@
   - [Overview](#overview)
   - [Scripts](#scripts)
     - [Stitch Integration Schedules](#stitch-integration-schedules)
+    - [Script Timing Summary](#script-timing-summary)
     - [asana-ghost-clean](#asana-ghost-clean)
     - [postgresql-backup](#postgresql-backup)
     - [synchrony](#synchrony)
@@ -70,7 +71,7 @@ flowchart LR
   power_auto{{Power\nAutomate}}
   qq_dataflows{{Power BI\nDataflows}}
   qq_script{{Java Application\nScripts}}
-  cradle_script{{Azure Function App\nPython Script}}
+  cradle_script{{Python Script}}
   bid_upload{{Batch File\nScript}}
   excel---->sharepoint---->powerbi-->validate>Data Validation]
   regfox((RegFox))-->reg_email{Scheduled\nEmail}-->reg_azure{{Azure Logic\nApp}}-->sharepoint
@@ -118,16 +119,16 @@ These languages are listed in approximate order of their importance. You should 
 | [Regular Expressions](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions/Cheatsheet) | Parses data from text fields |
 | [PowerShell](https://learn.microsoft.com/en-us/powershell/) | Scripts for operations that batch files do not support |
 | [SQL Anywhere](https://help.sap.com/docs/SAP_SQL_Anywhere/93079d4ba8e44920ae63ffb4def91f5b/f3c043ea50ed48e68b1c73774e2a2608.html) | Financial database queries |
-| [Python](https://www.python.org/) | Azure function to extract data |
+| [Python](https://www.python.org/) | Script to extract API data |
 | [Markdown](https://www.markdownguide.org/) | Documentation |
 
 ## Overview
 
 All scripts and power BI automation are based out of the **ACES-PowerBI** server. When connected to the ACES network, you can RDP into the server. Most scripts on the server are triggered using scheduled tasks.
 
-When errors occur, scripts are typically configured to send email notifications. There are four places required to change the recipients of these notifications. The first place is the `error_email` variable in the *./env_vars.bat* script located at the root of this repository. The second place is in all the [Power Automate] cloud flows (*Power BI notifications forwarding* and *Bidtracer Trigger*). The third place is in all the [Power Automate] desktop flows on **ACES-PowerBI** (*Bidtracer*). The fourth place is in the Python source code of a function app, *acesfuncy1 &#8594; cradlepointAPIExtract*, on [Azure Portal].
+When errors occur, scripts are typically configured to send email notifications. There are multiple places required to change the recipients of these notifications. The first place is the `error_email` variable in the *./env_vars.bat* script located at the root of this repository. The second place is in all the [Power Automate] cloud flows (*Power BI notifications forwarding* and *Bidtracer Trigger*). The third place is in all the [Power Automate] desktop flows on **ACES-PowerBI** (*Bidtracer*).
 
-Recently, I created an email group, <pbinotify@automaticcontrols.net>, and set all 4 locations to point to this. So you are better off just changing the members of this group to add/remove PBI notification recipients.
+Recently, I created an email group, <pbinotify@automaticcontrols.net>, and set all locations to point to this. So you are better off just changing the members of this group to add/remove PBI notification recipients.
 
 Most data is sent to a PostgreSQL database for processing and historical storage before Power BI reports ever touch it. I would suggest inspecting this database with [Azure Data Studio](https://azure.microsoft.com/en-us/products/data-studio/) to get familiar with its structure.
 
@@ -163,6 +164,25 @@ The PostgreSQL database lives on an AWS EC2 Ubuntu instance. Since Power BI does
 | [Google Analytics] | Disabled |
 
 There are a few problems with the Stitch integrations. Since the Asana integration takes a long time to synchronize everything, it is on my TODO list to create a Java application which replaces this functionality. When nodes are deleted from the source, Stitch will not delete them from the database. Stitch only updates existing nodes or creates new nodes. This is most problematic for Asana, which is why I created a Java application to delete these ghost nodes from the Asana database.
+
+### Script Timing Summary
+
+The events shown in this table all affect **ACES-PowerBI**.
+
+| Schedule | Script |
+| - | - |
+| 12:00AM Daily | [bidtracer](#bidtracer) |
+| 12:30AM Daily | [asana-ghost-clean](#asana-ghost-clean) |
+| 1:00AM Wednesdays | [qqube-validate](#qqube-validate) |
+| 1:00AM Fridays | [zendesk-validate](#zendesk-validate) |
+| 2:00AM Daily | [qqube-sync](#qqube-sync) |
+| 3:00AM Daily | [timeworksplus](#timeworksplus) |
+| 4:00AM Daily | [postgresql-backup](#postgresql-backup) |
+| 5:00AM Daily | [cradlepoint](#cradlepoint) |
+| 6:00AM Daily | [synchrony](#synchrony) |
+| 6:30AM Daily | [verizon](#verizon) |
+| 7:00AM Daily | [regfox](#regfox) |
+| 12:00PM Daily | [qqube-sync](#qqube-sync) |
 
 ### [asana-ghost-clean](./asana-ghost-clean/)
 
@@ -212,7 +232,7 @@ If an error occurs at any step in the process, the batch script is configured to
 
 The purpose of this script is to synchronize a [Quickbooks] job table from the SQL Anywhere database to the PostgreSQL database.
 
-1. [QQube] synchronizes data from Quickbooks into the SQL Anywhere database early in the morning every day.
+1. [QQube] synchronizes data from Quickbooks into the SQL Anywhere database at 2:00AM every day.
 2. A scheduled task (everyday at 12:00PM) on **ACES-PowerBI** with name *script-qqube-sync* executes a batch script: [*./qqube-sync/exec.bat*](./qqube-sync/exec.bat).
 3. The batch script executes a Java application *./qqube-sync/qqube-sync.jar*.
 4. The Java application copies data from `QQubeUser.vd_Job` in the SQL Anywhere database to `quickbooks.jobs` in the PostgreSQL database using last-modified timestamps to determine what needs updating.
@@ -283,14 +303,15 @@ If an error occurs at any step in the process, the batch script is configured to
 
 If an error occurs at any step in the process, the batch script is configured to send email notifications. Detailed error information can be found in *./regfox/log.txt*.
 
-### cradlepoint
+### [cradlepoint](./cradlepoint/)
 
 The purpose of this script is to move data from the [Cradlepoint API](https://developer.cradlepoint.com/) into the PostgreSQL database.
 
-1. The *acesfuncy1* function app with the *cradlepointAPIExtract* function on [Azure Portal] runs daily at 1:30PM.
-2. The function uses some Python scripts to put data from [Cradlepoint] into the PostgreSQL database.
+1. A scheduled task (daily at 5:00AM) on **ACES-PowerBI** with name *script-cradlepoint* executes a batch script: [*./cradlepoint/exec.bat*](./cradlepoint/exec.bat).
+2. The batch script executes a Python script: [*./cradlepoint/\_\_init\_\_.py*](./cradlepoint/__init__.py).
+3. The  Python script queries data from the [Cradlepoint] API and inserts it into the PostgreSQL database.
 
-Python script source code is available on [Azure Portal]. The scripts can be modified by uploading another file with the same name to Azure. In the past, this script has failed when Cradlepoint adds new columns to their API. The solution for this type of error is to add the missing columns to the appropriate tables in the PostgreSQL database.
+If an error occurs at any step in the process, the batch script is configured to send email notifications. Detailed error information can be found in *./cradlepoint/log.txt*. In the past, this script has failed when Cradlepoint adds new columns to their API. The solution for this type of error is to add the missing columns to the appropriate tables in the PostgreSQL database.
 
 ### [webctrl-monitor](./webctrl-monitor/)
 
@@ -301,8 +322,10 @@ The purpose of this script is to continuously monitor webservers for uptime, and
 This section describes a few prerequisites for getting the scripts in this repository to function correctly. Some scripts may not work outside of **ACES-PowerBI** at all, but others could have partial functionality. The location of this repository on **ACES-PowerBI** is *C:\ACES\scripts*.
 
 1. Clone this repository to your computer.
-2. Install the latest [JDK](https://jdk.java.net/), [PSQL](https://www.postgresql.org/download/), [Curl](https://curl.se/windows/), and [RClone](https://rclone.org/downloads/). Ensure the *./bin* folder of each installation is added to your *PATH* environment variable. Also set the *JAVA_HOME* environment variable.
-3. Create a batch file *./env_vars.bat* in the root of this repository. Populate it with the required credentials. An example is shown below.
+2. Install the latest [JDK](https://jdk.java.net/), [PSQL](https://www.postgresql.org/download/), [Curl](https://curl.se/windows/), [RClone](https://rclone.org/downloads/), and [Python](https://www.python.org/downloads/).
+3. Ensure the *./bin* folder of each installation is added to your *PATH* environment variable. Also set the *JAVA_HOME* environment variable.
+4. Install the Python [requests](https://pypi.org/project/requests/) and [psycopg2](https://pypi.org/project/psycopg2/) packages with *pip*.
+5. Create a batch file *./env_vars.bat* in the root of this repository. Populate it with the required credentials. An example is shown below.
 
 ```bat
 set "lib=%~dp0lib"
@@ -311,11 +334,17 @@ set "pbi_email=pbi@email.com"
 set "pbi_password=12345678"
 set "error_email=abcdefghijk@amer.teams.ms;username@automaticcontrols.net"
 set "postgresql_url=postgresql.database.net"
+set "postgresql_port=5432"
+set "postgresql_database=postgres"
 set "postgresql_user=username"
 set "postgresql_pass=12345678"
 set "asana_token=1/1111111111:ffffffffffffff"
 set "twp_api_secret=abcdefghijklmnopqrstuvwxyz012346789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 set "twp_site_id=000000"
+set "X_CP_API_ID=234dg58723"
+set "X_CP_API_KEY=b724bvsnfdcxy7y473e84c3bt68bw6ntfr34"
+set "X_ECM_API_ID=n7c34ybbc-3chsgtbuytgfrvbeuy-4v5hr75hvjdf"
+set "X_ECM_API_KEY=nbghregbuyfgebu43c8745ynt8nf85t43y8nf654"
 ```
 
 4. Execute [*./collect.bat*](./collect.bat) to download required dependencies.

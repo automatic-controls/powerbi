@@ -40,11 +40,11 @@ exit /b
   for /l %%i in (1,1,%attempts%) do (
     if !suc! NEQ 0 (
       if %%i EQU 1 (
-        psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q -c "\copy bidtracer.alloc (bid_id, bid_title, cost_code, cost_description, hours, amount) from '%estimateFile%' with DELIMITER ',' CSV HEADER"
+        psql -h "!postgresql_url!" -p !postgresql_port! -U "!postgresql_user!" -d "!postgresql_database!" -q -c "\copy bidtracer.alloc (bid_id, bid_title, cost_code, cost_description, hours, amount) from '%estimateFile%' with DELIMITER ',' CSV HEADER"
         set "suc=!ErrorLevel!"
       ) else (
         timeout /nobreak /t 300 >nul
-        psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q -c "\copy bidtracer.alloc (bid_id, bid_title, cost_code, cost_description, hours, amount) from '%estimateFile%' with DELIMITER ',' CSV HEADER" >nul 2>&1
+        psql -h "!postgresql_url!" -p !postgresql_port! -U "!postgresql_user!" -d "!postgresql_database!" -q -c "\copy bidtracer.alloc (bid_id, bid_title, cost_code, cost_description, hours, amount) from '%estimateFile%' with DELIMITER ',' CSV HEADER" >nul 2>&1
         set "suc=!ErrorLevel!"
       )
     )

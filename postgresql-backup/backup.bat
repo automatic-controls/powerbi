@@ -41,11 +41,11 @@ set /a len-=1
     for /l %%j in (1,1,%attempts%) do (
       if !suc! NEQ 0 (
         if %%j EQU 1 (
-          psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q --csv -o "%tmpFile%" -c "SELECT * FROM !table[%%i]!"
+          psql -h "!postgresql_url!" -p !postgresql_port! -U "!postgresql_user!" -d "!postgresql_database!" -q --csv -o "%tmpFile%" -c "SELECT * FROM !table[%%i]!"
           set "suc=!ErrorLevel!"
         ) else (
           timeout /nobreak /t 300 >nul
-          psql -h "!postgresql_url!" -p 5432 -U "!postgresql_user!" -d "analytics" -q --csv -o "%tmpFile%" -c "SELECT * FROM !table[%%i]!" >nul 2>&1
+          psql -h "!postgresql_url!" -p !postgresql_port! -U "!postgresql_user!" -d "!postgresql_database!" -q --csv -o "%tmpFile%" -c "SELECT * FROM !table[%%i]!" >nul 2>&1
           set "suc=!ErrorLevel!"
         )
       )

@@ -8,7 +8,7 @@ public class DataUploader implements AutoCloseable {
       con = null;
     }
     if (con==null || con.isClosed()){
-      con = DriverManager.getConnection("jdbc:postgresql://"+Env.postgresql_url+":5432/analytics", Env.postgresql_user, Env.postgresql_pass);
+      con = DriverManager.getConnection("jdbc:postgresql://"+Env.postgresql_url+":"+Env.postgresql_port+"/"+Env.postgresql_database, Env.postgresql_user, Env.postgresql_pass);
       con.setAutoCommit(false);
     }
   }

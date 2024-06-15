@@ -29,7 +29,7 @@ public class Main {
       }
       System.out.println("Establishing connection to database...");
       try(
-        Connection con = DriverManager.getConnection("jdbc:postgresql://"+Env.postgresql_url+":5432/analytics", Env.postgresql_user, Env.postgresql_pass);
+        Connection con = DriverManager.getConnection("jdbc:postgresql://"+Env.postgresql_url+":"+Env.postgresql_port+"/"+Env.postgresql_database, Env.postgresql_user, Env.postgresql_pass);
       ){
         con.setAutoCommit(false);
         try{

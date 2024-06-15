@@ -25,7 +25,7 @@ public class Main {
       final ArrayList<Ticket> tickets = new ArrayList<Ticket>(256);
       for (int i=0;i<Env.attempts;++i){
         try(
-          Connection postgresql = DriverManager.getConnection("jdbc:postgresql://"+Env.postgresql_url+":5432/analytics", Env.postgresql_user, Env.postgresql_pass);
+          Connection postgresql = DriverManager.getConnection("jdbc:postgresql://"+Env.postgresql_url+":"+Env.postgresql_port+"/"+Env.postgresql_database, Env.postgresql_user, Env.postgresql_pass);
           Statement s = postgresql.createStatement();
         ){
           try(
