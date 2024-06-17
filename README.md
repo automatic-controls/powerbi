@@ -36,6 +36,7 @@
       - [Reports: Benefits Billing Detail, Time Sheet, Scheduled Payments](#reports-benefits-billing-detail-time-sheet-scheduled-payments)
     - [timeworksplus](#timeworksplus)
     - [qqube-sync](#qqube-sync)
+    - [qqube-checker](#qqube-checker)
     - [qqube-validate](#qqube-validate)
     - [zendesk-validate](#zendesk-validate)
     - [bidtracer](#bidtracer)
@@ -179,6 +180,7 @@ The events shown in this table all affect **ACES-PowerBI**.
 | 3:00AM Daily | [timeworksplus](#timeworksplus) |
 | 4:00AM Daily | [postgresql-backup](#postgresql-backup) |
 | 5:00AM Daily | [cradlepoint](#cradlepoint) |
+| 5:30AM Daily | [qqube-checker](#qqube-checker) |
 | 6:00AM Daily | [synchrony](#synchrony) |
 | 6:30AM Daily | [verizon](#verizon) |
 | 7:00AM Daily | [regfox](#regfox) |
@@ -238,6 +240,18 @@ The purpose of this script is to synchronize a [Quickbooks] job table from the S
 4. The Java application copies data from `QQubeUser.vd_Job` in the SQL Anywhere database to `quickbooks.jobs` in the PostgreSQL database using last-modified timestamps to determine what needs updating.
 
 If an error occurs at any step in the process, the batch script is configured to send email notifications. Detailed error information can be found in *./qqube-sync/log.txt*.
+
+### [qqube-checker](./qqube-checker/)
+
+The purpose of this script is to send an email notification when [QQube] fails to synchronize [Quickbooks] to the SQL Anywhere database.
+
+1. QQube is supposed to synchronize data from Quickbooks into the SQL Anywhere database at 2:00AM every day.
+2. A scheduled task (everyday at 5:30AM) on **ACES-PowerBI** with name *script-qqube-checker* executes a batch script: [*./qqube-checker/exec.bat*](./qqube-checker/exec.bat).
+3. The batch script executes a Java application *./qqube-checker/qqube-checker.jar*.
+4. The Java application checks whether a successful QQube sync has occurred in the last 9.5 hours, corresponding to 8:00PM of the previous night.
+5. If a successful sync has not occurred, the batch script sends out an email notification alerting IT that a manual sync needs to be initiated.
+
+If an error occurs at any step in the process, the batch script is configured to send email notifications. Detailed error information can be found in *./qqube-checker/log.txt*.
 
 ### [qqube-validate](./qqube-validate/)
 

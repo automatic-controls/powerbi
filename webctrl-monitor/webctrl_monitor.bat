@@ -44,7 +44,7 @@ for /f "usebackq tokens=1,2 delims= " %%i in ("%state%") do (
   )
 )
 for /l %%i in (1,1,%len%) do (
-  curl --location --tlsv1.2 --ca-native --connect-timeout 4 --max-time 6 --fail --silent --output nul "!dns[%%i]!"
+  curl --location --tlsv1.2 --ca-native --connect-timeout 5 --max-time 8 --fail --silent --output nul "!dns[%%i]!"
   if !ErrorLevel! EQU 0 (
     if !online[%%i]!==0 (
       echo [!date! - !time!] Acquired connection to !name[%%i]!>>"%log%"

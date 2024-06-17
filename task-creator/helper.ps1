@@ -71,6 +71,18 @@ if ((New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsI
   }else{
     Write-Host "Skipping $name."
   }
+  $name = 'script-qqube-checker'
+  if ($null -eq (Get-ScheduledTask -TaskName $name -ErrorAction 'Ignore')){
+    Write-Host "Installing $name..."
+    $trigger = New-ScheduledTaskTrigger -Daily -At '5:30am'
+    $principal = New-ScheduledTaskPrincipal -UserID 'NT AUTHORITY\SYSTEM' -LogonType 'ServiceAccount' -RunLevel 'Highest'
+    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 2) -MultipleInstances 'IgnoreNew' -Priority 7 -StartWhenAvailable -WakeToRun
+    $action = New-ScheduledTaskAction -Execute (Join-Path -Path (Split-Path -Parent $PSScriptRoot) -ChildPath 'qqube-checker\exec.bat')
+    $task = New-ScheduledTask -Action $action -Principal $principal -Trigger $trigger -Settings $settings -Description 'Checks whether QQube successfully synced data from Quickbooks to the SQL Anywhere database.'
+    $null = Register-ScheduledTask -InputObject $task -Force -TaskName $name
+  }else{
+    Write-Host "Skipping $name."
+  }
   $name = 'script-synchrony'
   if ($null -eq (Get-ScheduledTask -TaskName $name -ErrorAction 'Ignore')){
     Write-Host "Installing $name..."
