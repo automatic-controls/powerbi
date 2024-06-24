@@ -3,13 +3,11 @@ call "%~dp0../env_vars.bat"
 setlocal EnableDelayedExpansion
 set "script=%~dp0mail_script.ps1"
 (
-  echo !date! - !time! - Started
   python "%~dp0__init__.py"
   if !ERRORLEVEL! NEQ 0 (
     echo An error was encountered.
     call :email
   )
-  echo !date! - !time! - Ended
 ) >> "%~dp0log.txt" 2>&1
 exit
 

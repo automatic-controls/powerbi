@@ -179,11 +179,12 @@ The events shown in this table all affect **ACES-PowerBI**.
 | 2:00AM Daily | [qqube-sync](#qqube-sync) |
 | 3:00AM Daily | [timeworksplus](#timeworksplus) |
 | 4:00AM Daily | [postgresql-backup](#postgresql-backup) |
+| 4:30AM Daily | [cradlepoint-backup](#cradlepoint-backup) |
 | 5:00AM Daily | [cradlepoint](#cradlepoint) |
 | 5:30AM Daily | [qqube-checker](#qqube-checker) |
 | 6:00AM Daily | [synchrony](#synchrony) |
-| 6:30AM Daily | [verizon](#verizon) |
 | 7:00AM Daily | [regfox](#regfox) |
+| 7:30AM Daily | [verizon](#verizon) |
 | 12:00PM Daily | [qqube-sync](#qqube-sync) |
 
 ### [asana-ghost-clean](./asana-ghost-clean/)
@@ -294,7 +295,7 @@ The purpose of this script is to gather data from [Verizon Connect] and upload i
 2. The **verizon-email-capture** logic app on [Azure Portal] captures emails from Verizon with subject containing the phrase: *Scheduled Report*.
 3. Attachments from captured emails are uploaded to [Sharepoint].
 4. Captured emails are moved to the *deleted* mailbox.
-5. A scheduled task (daily at 6:30AM) ON **ACES-PowerBI** with name *script-verizon* executes a batch script: [*./verizon/import.bat*](./verizon/import.bat).
+5. A scheduled task (daily at 7:30AM) ON **ACES-PowerBI** with name *script-verizon* executes a batch script: [*./verizon/import.bat*](./verizon/import.bat).
 6. The batch script retrieves the attachments from [Sharepoint] using [RClone] and uploads them to the appropriate table in the PostgreSQL database.
 7. PostgreSQL triggers are invoked to delete duplicate rows: [*./verizon/trigger.sql*](./verizon/trigger.sql).
 
@@ -327,6 +328,17 @@ The purpose of this script is to move data from the [Cradlepoint API](https://de
 
 If an error occurs at any step in the process, the batch script is configured to send email notifications. Detailed error information can be found in *./cradlepoint/log.txt*. In the past, this script has failed when Cradlepoint adds new columns to their API. The solution for this type of error is to add the missing columns to the appropriate tables in the PostgreSQL database.
 
+### [cradlepoint-backup](./cradlepoint-backup/)
+
+The purpose of this script is to backup active Cradlepoint router and group configurations.
+
+1. A scheduled task (daily at 4:30AM) on **ACES-PowerBI** with name *script-cradlepoint-backup* executes a batch script: [*./cradlepoint-backup/exec.bat*](./cradlepoint-backup/exec.bat).
+2. The batch script executes a PowerShell script, [*./cradlepoint-backup/backup.ps1*](./cradlepoint-backup/backup.ps1), which downloads router and group configurations from the [Cradlepoint API]((https://developer.cradlepoint.com/)) using [Curl](https://curl.se/).
+3. A Java utility, *jar.exe*, is used to compress the JSON configurations into a ZIP file.
+4. [RClone] is used to upload the ZIP file to Dropbox with 365 day backup retention.
+
+If an error occurs at any step in the process, the batch script is configured to send email notifications. Detailed error information can be found in *./cradlepoint-backup/log.txt*.
+
 ### [webctrl-monitor](./webctrl-monitor/)
 
 The purpose of this script is to continuously monitor webservers for uptime, and send email notifications when a webservers goes online or offline. This is primarily used to monitor WebCTRL servers, but a few other websites are tracked as well. A scheduled task named *script-webctrl-monitor* starts this script on system startup on **ACES-PowerBI**. Events are logged to *./webctrl-monitor/log.txt*.
@@ -336,7 +348,7 @@ The purpose of this script is to continuously monitor webservers for uptime, and
 This section describes a few prerequisites for getting the scripts in this repository to function correctly. Some scripts may not work outside of **ACES-PowerBI** at all, but others could have partial functionality. The location of this repository on **ACES-PowerBI** is *C:\ACES\scripts*.
 
 1. Clone this repository to your computer.
-2. Install the latest [JDK](https://jdk.java.net/), [PSQL](https://www.postgresql.org/download/), [Curl](https://curl.se/windows/), [RClone](https://rclone.org/downloads/), and [Python](https://www.python.org/downloads/).
+2. Install the latest [JDK](https://jdk.java.net/), [PSQL](https://www.postgresql.org/download/), [Curl](https://curl.se/windows/), [RClone](https://rclone.org/downloads/), [Python](https://www.python.org/downloads/), and [PowerShell](https://github.com/PowerShell/PowerShell).
 3. Ensure the *./bin* folder of each installation is added to your *PATH* environment variable. Also set the *JAVA_HOME* environment variable.
 4. Install the Python [requests](https://pypi.org/project/requests/) and [psycopg2](https://pypi.org/project/psycopg2/) packages with *pip*.
 5. Create a batch file *./env_vars.bat* in the root of this repository. Populate it with the required credentials. An example is shown below.
@@ -367,6 +379,7 @@ set "X_ECM_API_KEY=nbghregbuyfgebu43c8745ynt8nf85t43y8nf654"
 | Build Script |
 | - |
 | [*./asana-ghost-clean/build.bat*](./asana-ghost-clean/build.bat) |
+| [*./qqube-checker/build.bat*](./qqube-checker/build.bat) |
 | [*./qqube-sync/build.bat*](./qqube-sync/build.bat) |
 | [*./qqube-validate/build.bat*](./qqube-validate/build.bat) |
 | [*./zendesk-validate/build.bat*](./zendesk-validate/build.bat) |

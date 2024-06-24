@@ -3,36 +3,24 @@ import requests
 import psycopg
 import logging.handlers
 import vars
-def get_routers():
+def get_net_device_health():
     ret = False
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
-    API_OBJ_RESPONSE_SIZE = 50
+    API_OBJ_RESPONSE_SIZE = 150
     fields = [
-        'config_status',
-        'created_at',
-        'description',
-        'device_type',
-        'full_product_name',
+        'cellular_health_category',
+        'cellular_health_score',
         'id',
-        'ipv4_address',
-        'locality',
-        'mac',
-        'name',
-        'reboot_required',
-        'serial_number',
-        'state',
-        'state_updated_at',
-        'updated_at',
-        'upgrade_pending'
+        'net_device'
     ]
     fields = ','.join(fields)
     try:
         conn = psycopg.connect(vars.conn_string)
         cursor = conn.cursor()
-        cursor.execute('TRUNCATE cradlepoint.routers RESTART IDENTITY CASCADE;')
-        with cursor.copy("COPY cradlepoint.routers ({}) FROM STDIN;".format(fields)) as copy:
-            url = "https://www.cradlepointecm.com/api/v2/routers/?fields={0}&limit={1}".format(fields, API_OBJ_RESPONSE_SIZE)
+        cursor.execute('DELETE FROM cradlepoint.net_device_health WHERE "date">=CURRENT_DATE;')
+        with cursor.copy("COPY cradlepoint.net_device_health ({}) FROM STDIN;".format(fields)) as copy:
+            url = "https://www.cradlepointecm.com/api/v2/net_device_health/?fields={0}&limit={1}".format(fields, API_OBJ_RESPONSE_SIZE)
             while url:
                 vars.hits+=1
                 if vars.hits%50==0:
@@ -41,8 +29,8 @@ def get_routers():
                 req.raise_for_status()
                 resp = req.json()
                 url = resp['meta']['next']
-                for router in resp['data']:
-                    copy.write_row(router[column] for column in router.keys())
+                for health in resp['data']:
+                    copy.write_row(health[column] for column in health.keys())
         conn.commit()
     except Exception as e:
         logger.exception(e)

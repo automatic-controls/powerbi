@@ -35,21 +35,21 @@ exit /b
 :main
   echo %date%-%time% - Attempting to import data.
   rclone copyto --ignore-checksum --ignore-size --retries 5 --retries-sleep 500ms "%src%\%reportMovements%" "%~dp0%reportMovements%"
-  rclone copyto --ignore-checksum --ignore-size --retries 5 --retries-sleep 500ms "%src%\%reportSpeeding%" "%~dp0%reportSpeeding%"
-  rclone copyto --ignore-checksum --ignore-size --retries 5 --retries-sleep 500ms "%src%\%reportIncidents%" "%~dp0%reportIncidents%"
-  rclone copyto --ignore-checksum --ignore-size --retries 5 --retries-sleep 500ms "%src%\%reportServices%" "%~dp0%reportServices%"
   if not exist "%~dp0%reportMovements%" (
     set "err=Could not locate movement report."
     exit /b 1
   )
+  rclone copyto --ignore-checksum --ignore-size --retries 5 --retries-sleep 500ms "%src%\%reportSpeeding%" "%~dp0%reportSpeeding%"
   if not exist "%~dp0%reportSpeeding%" (
     set "err=Could not locate speeding report."
     exit /b 1
   )
+  rclone copyto --ignore-checksum --ignore-size --retries 5 --retries-sleep 500ms "%src%\%reportIncidents%" "%~dp0%reportIncidents%"
   if not exist "%~dp0%reportIncidents%" (
     set "err=Could not locate incident report."
     exit /b 1
   )
+  rclone copyto --ignore-checksum --ignore-size --retries 5 --retries-sleep 500ms "%src%\%reportServices%" "%~dp0%reportServices%"
   if not exist "%~dp0%reportServices%" (
     set "err=Could not locate maintenance report."
     exit /b 1

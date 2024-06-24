@@ -8,6 +8,7 @@ lib
 postgresql-backup/*/
 synchrony/stamps.bat
 synchrony/data
+cradlepoint-backup/data
 *.html
 webctrl-monitor/state.txt
 webctrl-monitor/sites.txt

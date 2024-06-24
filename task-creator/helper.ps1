@@ -59,6 +59,18 @@ if ((New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsI
   }else{
     Write-Host "Skipping $name."
   }
+  $name = 'script-cradlepoint-backup'
+  if ($null -eq (Get-ScheduledTask -TaskName $name -ErrorAction 'Ignore')){
+    Write-Host "Installing $name..."
+    $trigger = New-ScheduledTaskTrigger -Daily -At '4:30am'
+    $principal = New-ScheduledTaskPrincipal -UserID 'NT AUTHORITY\SYSTEM' -LogonType 'ServiceAccount' -RunLevel 'Highest'
+    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 4) -MultipleInstances 'IgnoreNew' -Priority 7 -StartWhenAvailable -WakeToRun
+    $action = New-ScheduledTaskAction -Execute (Join-Path -Path (Split-Path -Parent $PSScriptRoot) -ChildPath 'cradlepoint-backup\exec.bat')
+    $task = New-ScheduledTask -Action $action -Principal $principal -Trigger $trigger -Settings $settings -Description 'Provides daily backups for Cradlepoint router and group configurations.'
+    $null = Register-ScheduledTask -InputObject $task -Force -TaskName $name
+  }else{
+    Write-Host "Skipping $name."
+  }
   $name = 'script-cradlepoint'
   if ($null -eq (Get-ScheduledTask -TaskName $name -ErrorAction 'Ignore')){
     Write-Host "Installing $name..."
@@ -95,18 +107,6 @@ if ((New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsI
   }else{
     Write-Host "Skipping $name."
   }
-  $name = 'script-verizon'
-  if ($null -eq (Get-ScheduledTask -TaskName $name -ErrorAction 'Ignore')){
-    Write-Host "Installing $name..."
-    $trigger = New-ScheduledTaskTrigger -Daily -At '6:30am'
-    $principal = New-ScheduledTaskPrincipal -UserID 'NT AUTHORITY\SYSTEM' -LogonType 'ServiceAccount' -RunLevel 'Highest'
-    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 8) -MultipleInstances 'IgnoreNew' -Priority 7 -StartWhenAvailable -WakeToRun
-    $action = New-ScheduledTaskAction -Execute (Join-Path -Path (Split-Path -Parent $PSScriptRoot) -ChildPath 'verizon\import.bat')
-    $task = New-ScheduledTask -Action $action -Principal $principal -Trigger $trigger -Settings $settings -Description 'Imports reports from Verizon into the PostgreSQL database.'
-    $null = Register-ScheduledTask -InputObject $task -Force -TaskName $name
-  }else{
-    Write-Host "Skipping $name."
-  }
   $name = 'script-regfox'
   if ($null -eq (Get-ScheduledTask -TaskName $name -ErrorAction 'Ignore')){
     Write-Host "Installing $name..."
@@ -115,6 +115,18 @@ if ((New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsI
     $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 4) -MultipleInstances 'IgnoreNew' -Priority 7 -StartWhenAvailable -WakeToRun
     $action = New-ScheduledTaskAction -Execute (Join-Path -Path (Split-Path -Parent $PSScriptRoot) -ChildPath 'regfox\import.bat')
     $task = New-ScheduledTask -Action $action -Principal $principal -Trigger $trigger -Settings $settings -Description 'Downloads and copies a RegFox report to Sharepoint.'
+    $null = Register-ScheduledTask -InputObject $task -Force -TaskName $name
+  }else{
+    Write-Host "Skipping $name."
+  }
+  $name = 'script-verizon'
+  if ($null -eq (Get-ScheduledTask -TaskName $name -ErrorAction 'Ignore')){
+    Write-Host "Installing $name..."
+    $trigger = New-ScheduledTaskTrigger -Daily -At '7:30am'
+    $principal = New-ScheduledTaskPrincipal -UserID 'NT AUTHORITY\SYSTEM' -LogonType 'ServiceAccount' -RunLevel 'Highest'
+    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 8) -MultipleInstances 'IgnoreNew' -Priority 7 -StartWhenAvailable -WakeToRun
+    $action = New-ScheduledTaskAction -Execute (Join-Path -Path (Split-Path -Parent $PSScriptRoot) -ChildPath 'verizon\import.bat')
+    $task = New-ScheduledTask -Action $action -Principal $principal -Trigger $trigger -Settings $settings -Description 'Imports reports from Verizon into the PostgreSQL database.'
     $null = Register-ScheduledTask -InputObject $task -Force -TaskName $name
   }else{
     Write-Host "Skipping $name."
