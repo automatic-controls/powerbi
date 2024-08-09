@@ -43,6 +43,7 @@
     - [verizon](#verizon)
     - [regfox](#regfox)
     - [cradlepoint](#cradlepoint)
+    - [cradlepoint-backup](#cradlepoint-backup)
     - [webctrl-monitor](#webctrl-monitor)
   - [Development](#development)
 
@@ -280,10 +281,10 @@ Eventually, the intention is that bad tickets will be emailed to their creators.
 The purpose of this script is to gather data from [Bidtracer] and upload it to the PostgreSQL database. Collected data includes a list of awarded bids with contract prices and estimated hours separated by category.
 
 1. A [Power Automate] cloud flow (*Bidtracer Trigger*) initiates a power automate desktop flow (*Bidtracer*) daily at 12:00AM.
-2. The desktop flow navigates to <https://www.bidtracer.com/> and downloads an XLSX report file.
+2. The desktop flow navigates to <https://www.bidtracer.com/> and downloads XLSX report files.
 3. The desktop flow initiates a batch script: [*./bidtracer/import.bat*](./bidtracer/import.bat).
-4. The batch script converts the XLSX file to the CSV format and uploads it to the PostgreSQL database.
-5. A PostgreSQL trigger is invoked to delete duplicate Bidtracer rows: [*./bidtracer/trigger.sql*](./bidtracer/trigger.sql).
+4. The batch script converts the XLSX files to the CSV format and uploads them to the PostgreSQL database.
+5. PostgreSQL triggers are invoked on insertion to delete duplicate rows: [*./bidtracer/trigger.sql*](./bidtracer/trigger.sql).
 
 If an error occurs at any step in the process, the batch script is configured to send email notifications. Detailed error information can be found in *./bidtracer/log.txt*.
 
