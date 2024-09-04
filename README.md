@@ -224,9 +224,9 @@ If an error occurs at any step in the process, the batch script is configured to
 
 ### [timeworksplus](./timeworksplus/)
 
-The purpose of this Java application script is to retrieve [Synchrony] timecard data from the [TimeWorksPlus API](https://twpapi.payrollservers.us/swagger/ui/index#!) and upload it to the PostgreSQL database.
+The purpose of this Java application script is to retrieve [Synchrony] timecard and PTO request data from the [TimeWorksPlus API](https://twpapi.payrollservers.us/swagger/ui/index#!) and upload it to the PostgreSQL database.
 
-1. A scheduled task (daily at 3:00AM) on **ACES-PowerBI** with name *script-timeworksplus* executes a batch scripts: [*./timeworksplus/exec.bat*](./timeworksplus/exec.bat).
+1. A scheduled task (daily at 3:00AM) on **ACES-PowerBI** with name *script-timeworksplus* executes a batch script: [*./timeworksplus/exec.bat*](./timeworksplus/exec.bat).
 2. The batch script executes a Java application *./timeworksplus/timeworksplus.jar*.
 3. The Java application queries the TimeWorksPlus API and uploads the resulting data into the PostgreSQL database.
 

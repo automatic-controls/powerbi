@@ -32,6 +32,7 @@ public class TimeCardAPI {
   private final static String apiURL = "https://twpapi.payrollservers.us/api/"+Env.twp_site_id;
   private final static String employeeURL = apiURL+"/employees?beginEffectiveDate="+TWO_WEEKS_AGO+"&endEffectiveDate="+TODAY+"&onlyActive=false";
   private final static String timecardURL = apiURL+"/timecards?periodDate=$0&ids=$1";
+  private final static String ptoURL = apiURL+"/timeoffrequests?ids=$0";
   private final static Pattern tokenParser = Pattern.compile("\"token\"\\s*+:\\s*+\"([^\"]++)\"");
   private final static Pattern employeeCodeParser = Pattern.compile("\"EmployeeCode\"\\s*+:\\s*+\"([^\"]++)\"");
   private String token = null;
@@ -46,6 +47,7 @@ public class TimeCardAPI {
       final HashSet<String> employees = getEmployees();
       up.deleteUnlistedEmployees(employees, java.sql.Date.valueOf(TWO_WEEKS_AGO), java.sql.Date.valueOf(TODAY));
       ArrayList<TimecardEntry> entries;
+      ArrayList<PtoRequest> requests;
       for (String code:employees){
         if (everything){
           LocalDate d = LocalDate.of(2023,1,1);
@@ -66,12 +68,104 @@ public class TimeCardAPI {
           entries = getTimecard(code, TWO_WEEKS_AGO);
           up.submit(entries, startDate, endDate, code, employeeName);
         }
+        requests = getPTO(code);
+        up.submit(requests, code, employeeName);
       }
     }
   }
+  private ArrayList<PtoRequest> getPTO(String employeeCode) throws Throwable {
+    generateToken();
+    final URL url = new URI(Utility.format(ptoURL, employeeCode)).toURL();
+    Throwable e = null;
+    final ArrayList<PtoRequest> entries = new ArrayList<PtoRequest>(32);
+    int code;
+    for (int i=0;i<Env.attempts;++i){
+      try{
+        char[] json;
+        final HttpsURLConnection con = (HttpsURLConnection)url.openConnection();
+        try{
+          con.setConnectTimeout(timeout);
+          con.setReadTimeout(timeout);
+          con.setRequestMethod("GET");
+          con.setRequestProperty("Content-Type", "application/json");
+          con.setRequestProperty("Authorization", "Bearer "+token);
+          con.setInstanceFollowRedirects(false);
+          con.setUseCaches(false);
+          con.connect();
+          code = con.getResponseCode();
+          if (code==200){
+            json = jsonDecoder.decode(java.nio.ByteBuffer.wrap(con.getInputStream().readAllBytes())).array();
+          }else{
+            entries.clear();
+            if (code==401){
+              tokenExpiration = -1;
+            }else if (code==429){
+              Thread.sleep(60000L);
+            }else{
+              Thread.sleep(30000L);
+            }
+            generateToken();
+            continue;
+          }
+        }finally{
+          con.disconnect();
+        }
+        int len;
+        for (len=json.length;len>0;){
+          if ((int)json[--len]!=0){
+            break;
+          }
+        }
+        ++len;
+        //System.out.println(new String(json,0,len));
+        final __Root root = new Gson().fromJson(new CharArrayReader(json,0,len), __Root.class);
+        json = null;
+        __Result result;
+        __Day day;
+        PtoRequest req;
+        int j,k;
+        Double h;
+        for (j=0;j<root.Results.length;++j){
+          result = root.Results[j];
+          if (employeeCode.equalsIgnoreCase(result.EmployeeCode)){
+            employeeName = result.LastName+", "+result.FirstName;
+            for (k=0;k<result.Days.length;++k){
+              day = result.Days[k];
+              h = day.Hours==null?day.ProposedHours:day.Hours;
+              if (h!=null && h>0){
+                req = new PtoRequest();
+                req.hours = h;
+                req.setDate(day.Date);
+                req.setCreatedAt(day.DateRequestMade);
+                req.setApprovedAt(day.ApprovedDate);
+                req.approved_by = day.ApprovedBy;
+                req.category = day.Category;
+                req.comments = day.Comments;
+                req.status = day.Status;
+                entries.add(req);
+              }
+            }
+          }
+        }
+        e = null;
+        break;
+      }catch(Throwable ee){
+        entries.clear();
+        e = ee;
+        if (i+1<Env.attempts){
+          Thread.sleep(30000L);
+        }
+      }
+    }
+    if (e!=null){
+      throw e;
+    }
+    entries.sort(null);
+    return entries;
+  }
   private ArrayList<TimecardEntry> getTimecard(String employeeCode, String date) throws Throwable {
     generateToken();
-    final URL url = new URL(Utility.format(timecardURL, date, employeeCode));
+    final URL url = new URI(Utility.format(timecardURL, date, employeeCode)).toURL();
     Throwable e = null;
     final ArrayList<TimecardEntry> entries = new ArrayList<TimecardEntry>(64);
     int code;
@@ -152,7 +246,7 @@ public class TimeCardAPI {
   }
   private HashSet<String> getEmployees() throws Throwable {
     generateToken();
-    final URL url = new URL(employeeURL);
+    final URL url = new URI(employeeURL).toURL();
     Throwable e = null;
     final HashSet<String> employees = new HashSet<String>(64);
     int code = 0;
@@ -213,7 +307,7 @@ public class TimeCardAPI {
     if (t>=tokenExpiration){
       token = null;
       Throwable e = null;
-      final URL url = new URL(authURL);
+      final URL url = new URI(authURL).toURL();
       for (int i=0;i<Env.attempts;++i){
         try{
           tokenExpiration = System.currentTimeMillis()+180000;

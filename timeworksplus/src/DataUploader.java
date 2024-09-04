@@ -60,6 +60,51 @@ public class DataUploader implements AutoCloseable {
       }
     }
   }
+  public void submit(List<PtoRequest> entries, String employeeNumber, String employeeName) throws Throwable {
+    if (entries.isEmpty()){
+      return;
+    }
+    for (int i=1;i<=Env.attempts;++i){
+      try{
+        ensureConnect();
+        try{
+          try(
+            PreparedStatement p = con.prepareStatement("DELETE FROM timestar.pto_requests WHERE \"date\">=CURRENT_DATE AND \"employee_number\"=?;");
+          ){
+            p.setString(1, employeeNumber);
+            p.executeUpdate();
+          }
+          try(
+            PreparedStatement p = con.prepareStatement("INSERT INTO timestar.pto_requests VALUES(?,?,?,?,?,?,?,?,?,?);");
+          ){
+            p.setString(2,employeeNumber);
+            p.setString(3,employeeName);
+            for (PtoRequest ent:entries){
+              p.setObject(1,ent.created_at);
+              p.setString(4,Utility.flatten(ent.category));
+              p.setDate(5,ent.date);
+              p.setDouble(6,ent.hours);
+              p.setString(7,Utility.flatten(ent.status));
+              p.setString(8,ent.approved_by);
+              p.setObject(9,ent.approved_at);
+              p.setString(10,ent.comments);
+              p.addBatch();
+            }
+            p.executeBatch();
+          }
+          con.commit();
+        }finally{
+          con.rollback();
+        }
+        return;
+      }catch(Throwable t){
+        if (i==Env.attempts){
+          throw t;
+        }
+        Thread.sleep(30000L);
+      }
+    }
+  }
   public void submit(List<TimecardEntry> entries, java.sql.Date start, java.sql.Date end, String employeeNumber, String employeeName) throws Throwable {
     if (entries.isEmpty()){
       return;

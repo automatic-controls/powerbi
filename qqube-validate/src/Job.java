@@ -1,8 +1,7 @@
 import java.math.BigDecimal;
 import java.sql.*;
 import java.util.regex.*;
-public class Job {
-  private final static Pattern idParser = Pattern.compile("^[a-zA-Z]\\w*+(?:-\\w++)++\\b");
+public class Job implements Comparable<Job> {
   private final static Pattern numParser = Pattern.compile("-?+\\d++(?:,\\d{3}+)*+(?:\\.\\d{1,2}+)?+");
   private final static Pattern positiveNumParser = Pattern.compile("\\d++(?:,\\d{3}+)*+(?:\\.\\d{1,2}+)?+");
   public static volatile int count = 0;
@@ -14,7 +13,11 @@ public class Job {
   public String contractPrice = null;
   public String billedToDate = null;
   public String previousInvoices = null;
-  public Job(String name, Timestamp creationTime, String proposalPrice, String changeOrders, String contractPrice, String billedToDate, String previousInvoices){
+  public Job(String id, String name, Timestamp creationTime, String proposalPrice, String changeOrders, String contractPrice, String billedToDate, String previousInvoices){
+    if (proposalPrice!=null && changeOrders==null && contractPrice!=null){
+      changeOrders = "0";
+    }
+    this.id = id;
     this.name = name;
     this.creationTime = creationTime;
     this.proposalPrice = proposalPrice;
@@ -22,18 +25,9 @@ public class Job {
     this.contractPrice = contractPrice;
     this.billedToDate = billedToDate;
     this.previousInvoices = previousInvoices;
-    if (name==null){
-      System.out.println("Job ID: "+name);
-      ++count;
-    }else if (!name.startsWith("DO NOT USE ")){
-      Matcher m = idParser.matcher(name);
-      if (m.find()){
-        id = m.group();
-      }else{
-        System.out.println("Job ID: "+name);
-        ++count;
-      }
-    }
+  }
+  @Override public int compareTo(Job x){
+    return id.compareTo(x.id);
   }
   public void validate(){
     boolean fucked = proposalPrice==null || changeOrders==null || contractPrice==null;
@@ -56,7 +50,7 @@ public class Job {
       System.out.println(id+" Billed To Date: "+billedToDate);
       ++count;
     }
-    if (previousInvoices!=null && !positiveNumParser.matcher(previousInvoices).matches()){
+    if (previousInvoices!=null && !numParser.matcher(previousInvoices).matches()){
       System.out.println(id+" Previous Invoices: "+previousInvoices);
       ++count;
     }

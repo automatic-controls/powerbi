@@ -18,22 +18,15 @@ public class Main {
         return false;
       }
       final String query = new String(Files.readAllBytes(Paths.get(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParent().resolve("query.sql")), java.nio.charset.StandardCharsets.UTF_8);
-      TreeMap<String,Job> jobs = new TreeMap<String,Job>();
+      final ArrayList<Job> jobs = new ArrayList<>(4096);
       for (int i=0;i<Env.attempts;++i){
         try(
           Connection qqube = DriverManager.getConnection("jdbc:sqlanywhere:DSN=QQubeFinancials");
           Statement s = qqube.createStatement();
           ResultSet r = s.executeQuery(query);
         ){
-          Job j,k;
           while (r.next()){
-            j = new Job(r.getString(1), r.getTimestamp(2), r.getString(3), r.getString(4), r.getString(5), r.getString(6), r.getString(7));
-            if (j.id!=null){
-              k = jobs.get(j.id);
-              if (k==null || j.creationTime.after(k.creationTime)){
-                jobs.put(j.id,j);
-              }
-            }
+            jobs.add(new Job(r.getString(1), r.getString(2), r.getTimestamp(3), r.getString(4), r.getString(5), r.getString(6), r.getString(7), r.getString(8)));
           }
           break;
         }catch(Throwable t){
@@ -44,7 +37,7 @@ public class Main {
           Thread.sleep(300000L);
         }
       }
-      for (Job j:jobs.values()){
+      for (Job j:jobs){
         j.validate();
       }
       return true;
