@@ -60,6 +60,44 @@ public class DataUploader implements AutoCloseable {
       }
     }
   }
+  public void submit(List<Accrual> entries) throws Throwable {
+    if (entries.isEmpty()){
+      return;
+    }
+    for (int i=1;i<=Env.attempts;++i){
+      try{
+        ensureConnect();
+        try{
+          try(
+            Statement p = con.createStatement();
+          ){
+            p.executeUpdate("DELETE FROM timestar.accruals;");
+          }
+          try(
+            PreparedStatement p = con.prepareStatement("INSERT INTO timestar.accruals VALUES(?,?,?,?);");
+          ){
+            for (Accrual ent:entries){
+              p.setString(1,ent.employee_number);
+              p.setString(2,ent.employee_name);
+              p.setString(3,Utility.flatten(ent.category));
+              p.setDouble(4,ent.hours);
+              p.addBatch();
+            }
+            p.executeBatch();
+          }
+          con.commit();
+        }finally{
+          con.rollback();
+        }
+        return;
+      }catch(Throwable t){
+        if (i==Env.attempts){
+          throw t;
+        }
+        Thread.sleep(30000L);
+      }
+    }
+  }
   public void submit(List<PtoRequest> entries, String employeeNumber, String employeeName) throws Throwable {
     if (entries.isEmpty()){
       return;

@@ -33,6 +33,7 @@ public class TimeCardAPI {
   private final static String employeeURL = apiURL+"/employees?beginEffectiveDate="+TWO_WEEKS_AGO+"&endEffectiveDate="+TODAY+"&onlyActive=false";
   private final static String timecardURL = apiURL+"/timecards?periodDate=$0&ids=$1";
   private final static String ptoURL = apiURL+"/timeoffrequests?ids=$0";
+  private final static String accrualsURL = apiURL+"/accruals?showHidden=true";
   private final static Pattern tokenParser = Pattern.compile("\"token\"\\s*+:\\s*+\"([^\"]++)\"");
   private final static Pattern employeeCodeParser = Pattern.compile("\"EmployeeCode\"\\s*+:\\s*+\"([^\"]++)\"");
   private String token = null;
@@ -46,32 +47,112 @@ public class TimeCardAPI {
     ){
       final HashSet<String> employees = getEmployees();
       up.deleteUnlistedEmployees(employees, java.sql.Date.valueOf(TWO_WEEKS_AGO), java.sql.Date.valueOf(TODAY));
-      ArrayList<TimecardEntry> entries;
-      ArrayList<PtoRequest> requests;
       for (String code:employees){
         if (everything){
           LocalDate d = LocalDate.of(2023,1,1);
           LocalDate lim = LocalDate.now();
           while (true){
-            entries = getTimecard(code, DateTimeFormatter.ISO_LOCAL_DATE.format(d));
-            up.submit(entries, startDate, endDate, code, employeeName);
+            up.submit(getTimecard(code, DateTimeFormatter.ISO_LOCAL_DATE.format(d)), startDate, endDate, code, employeeName);
             if (d.isAfter(lim) || d.isEqual(lim)){
               break;
             }
             d = d.plusDays(7);
           }
         }else{
-          entries = getTimecard(code, TODAY);
-          up.submit(entries, startDate, endDate, code, employeeName);
-          entries = getTimecard(code, ONE_WEEK_AGO);
-          up.submit(entries, startDate, endDate, code, employeeName);
-          entries = getTimecard(code, TWO_WEEKS_AGO);
-          up.submit(entries, startDate, endDate, code, employeeName);
+          up.submit(getTimecard(code, TODAY), startDate, endDate, code, employeeName);
+          up.submit(getTimecard(code, ONE_WEEK_AGO), startDate, endDate, code, employeeName);
+          up.submit(getTimecard(code, TWO_WEEKS_AGO), startDate, endDate, code, employeeName);
         }
-        requests = getPTO(code);
-        up.submit(requests, code, employeeName);
+        up.submit(getPTO(code), code, employeeName);
+      }
+      up.submit(getAccruals(employees));
+    }
+  }
+  private ArrayList<Accrual> getAccruals(HashSet<String> employees) throws Throwable {
+    generateToken();
+    final URL url = new URI(accrualsURL).toURL();
+    Throwable e = null;
+    final ArrayList<Accrual> entries = new ArrayList<Accrual>(64);
+    int code;
+    for (int i=0;i<Env.attempts;++i){
+      try{
+        char[] json;
+        final HttpsURLConnection con = (HttpsURLConnection)url.openConnection();
+        try{
+          con.setConnectTimeout(timeout);
+          con.setReadTimeout(timeout);
+          con.setRequestMethod("GET");
+          con.setRequestProperty("Content-Type", "application/json");
+          con.setRequestProperty("Authorization", "Bearer "+token);
+          con.setInstanceFollowRedirects(false);
+          con.setUseCaches(false);
+          con.connect();
+          code = con.getResponseCode();
+          if (code==200){
+            json = jsonDecoder.decode(java.nio.ByteBuffer.wrap(con.getInputStream().readAllBytes())).array();
+          }else{
+            entries.clear();
+            if (code==401){
+              tokenExpiration = -1;
+            }else if (code==429){
+              Thread.sleep(60000L);
+            }else{
+              Thread.sleep(30000L);
+            }
+            generateToken();
+            continue;
+          }
+        }finally{
+          con.disconnect();
+        }
+        int len;
+        for (len=json.length;len>0;){
+          if ((int)json[--len]!=0){
+            break;
+          }
+        }
+        ++len;
+        //System.out.println(new String(json,0,len));
+        final ___Root root = new Gson().fromJson(new CharArrayReader(json,0,len), ___Root.class);
+        json = null;
+        ___Result result;
+        ___Balance bal;
+        Accrual ac;
+        int j,k;
+        double h;
+        for (j=0;j<root.Results.length;++j){
+          result = root.Results[j];
+          if (employees.contains(result.EmployeeCode)){
+            for (k=0;k<result.Balances.length;++k){
+              bal = result.Balances[k];
+              if (bal.value.length()>0){
+                try{
+                  h = Double.parseDouble(bal.value);
+                  ac = new Accrual();
+                  ac.hours = h;
+                  ac.employee_name = result.LastName+", "+result.FirstName;
+                  ac.employee_number = result.EmployeeCode;
+                  ac.category = bal.category;
+                  entries.add(ac);
+                }catch(NumberFormatException t){}
+              }
+            }
+          }
+        }
+        e = null;
+        break;
+      }catch(Throwable ee){
+        entries.clear();
+        e = ee;
+        if (i+1<Env.attempts){
+          Thread.sleep(30000L);
+        }
       }
     }
+    if (e!=null){
+      throw e;
+    }
+    return entries;
   }
   private ArrayList<PtoRequest> getPTO(String employeeCode) throws Throwable {
     generateToken();
