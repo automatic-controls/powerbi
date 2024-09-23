@@ -4,6 +4,7 @@ lib
 **/*.jar
 **/*.csv
 **/*log.txt
+**/*.dump
 **/__pycache__
 postgresql-backup/*/
 synchrony/stamps.bat

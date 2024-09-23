@@ -80,6 +80,33 @@ public class Main {
                 }
               }
             }
+            try(
+              Statement s = postgresql.createStatement();
+            ){
+              s.executeUpdate("DELETE FROM quickbooks.change_orders WHERE \"date\">=CURRENT_DATE;");
+              updates+=s.executeUpdate(
+                "INSERT INTO quickbooks.change_orders\n"+
+                "SELECT \"x\".* FROM (\n"+
+                "  SELECT\n"+
+                "    UPPER(\"id\") AS \"id\",\n"+
+                "    COALESCE(\n"+
+                "      \"change_orders\",\n"+
+                "      \"contract_price\"-\"proposal_price\",\n"+
+                "      0::MONEY\n"+
+                "    ) AS \"change_orders\",\n"+
+                "    CURRENT_DATE AS \"date\"\n"+
+                "  FROM quickbooks.jobs\n"+
+                "  WHERE \"contract_price\" IS NOT NULL\n"+
+                "  AND \"contract_price\">0::MONEY\n"+
+                ") \"x\" LEFT JOIN (\n"+
+                "  SELECT DISTINCT ON (\"id\") *\n"+
+                "  FROM quickbooks.change_orders\n"+
+                "  ORDER BY \"id\" ASC, \"date\" DESC\n"+
+                ") \"y\" ON \"x\".\"id\"=\"y\".\"id\"\n"+
+                "WHERE \"y\".\"id\" IS NULL OR \"x\".\"change_orders\"!=\"y\".\"change_orders\";"
+              );
+            }
+            postgresql.commit();
           }finally{
             postgresql.rollback();
           }
