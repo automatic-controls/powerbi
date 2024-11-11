@@ -15,10 +15,18 @@ CREATE SCHEMA IF NOT EXISTS timestar;
 CREATE SCHEMA IF NOT EXISTS verizon;
 CREATE SCHEMA IF NOT EXISTS zendesk_v2;
 GRANT CONNECT ON DATABASE powerbi TO stitch;
+GRANT CREATE ON DATABASE powerbi TO stitch;
+GRANT USAGE ON SCHEMA public TO stitch;
+GRANT SELECT ON ALL TABLES IN SCHEMA information_schema TO stitch;
+GRANT SELECT ON ALL TABLES IN SCHEMA pg_catalog TO stitch;
 GRANT ALL PRIVILEGES ON SCHEMA asana_v2 TO stitch;
 GRANT ALL PRIVILEGES ON SCHEMA mailchimp TO stitch;
 GRANT ALL PRIVILEGES ON SCHEMA pd TO stitch;
 GRANT ALL PRIVILEGES ON SCHEMA zendesk_v2 TO stitch;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA asana_v2 TO stitch;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA mailchimp TO stitch;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA pd TO stitch;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA zendesk_v2 TO stitch;
 CREATE OR REPLACE FUNCTION format_asana_projects_current_status() RETURNS TRIGGER AS $$
   BEGIN
     IF NEW.current_status IS NOT NULL AND try_json_cast(NEW.current_status) IS NULL THEN
@@ -59,6 +67,15 @@ CREATE OR REPLACE FUNCTION format_asana_projects_current_status() RETURNS TRIGGE
   END;
 $$ LANGUAGE plpgsql;
 GRANT EXECUTE ON FUNCTION format_asana_projects_current_status() TO stitch;
+CREATE OR REPLACE FUNCTION try_json_cast(valid_json_string TEXT) RETURNS JSONB AS $$
+  BEGIN
+    RETURN valid_json_string::JSONB;
+  EXCEPTION
+    WHEN OTHERS THEN
+      RETURN NULL;
+  END;
+$$ LANGUAGE plpgsql;
+GRANT EXECUTE ON FUNCTION try_json_cast(TEXT) TO stitch;
 --*/
 
 --/*

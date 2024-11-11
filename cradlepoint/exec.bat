@@ -3,7 +3,7 @@ call "%~dp0../env_vars.bat"
 setlocal EnableDelayedExpansion
 set "script=%~dp0mail_script.ps1"
 (
-  python "%~dp0__init__.py"
+  "C:\Program Files\Python312\python.exe" "%~dp0__init__.py"
   if !ERRORLEVEL! NEQ 0 (
     echo An error was encountered.
     call :email

@@ -1,11 +1,11 @@
 import os
 hits = 0
 conn_string = "host={0} port={1} user={2} dbname={3} password={4} sslmode={5}".format(
-    os.environ["_postgresql_url"],
-    os.environ["_postgresql_port"],
-    os.environ["_postgresql_user"],
-    os.environ["_postgresql_database"],
-    os.environ["_postgresql_pass"],
+    os.environ["postgresql_url"],
+    os.environ["postgresql_port"],
+    os.environ["postgresql_user"],
+    os.environ["postgresql_database"],
+    os.environ["postgresql_pass"],
     'require'
 )
 headers = {

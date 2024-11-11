@@ -7,10 +7,15 @@ set /a max=5
 
 :: List of tables to backup
 set "table[1]=bidtracer.alloc"
-set "table[2]=quickbooks.jobs"
-set "table[3]=timestar.timesheets_processed"
-set "table[4]=payroll.benefits"
-set "table[5]=payroll.compensation"
+set "table[2]=bidtracer.margin"
+set "table[3]=bidtracer.materials"
+set "table[4]=quickbooks.jobs"
+set "table[5]=quickbooks.change_orders"
+set "table[6]=timestar.timesheets_processed"
+set "table[7]=timestar.accruals"
+set "table[8]=timestar.pto_requests"
+set "table[9]=payroll.benefits"
+set "table[10]=payroll.compensation"
 
 
 set "stamp=%date:~-4%-%date:~-10,2%-%date:~-7,2%"

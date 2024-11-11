@@ -24,13 +24,14 @@ if %ErrorLevel% NEQ 0 (
 if %internet% EQU 0 echo [!date! - !time!] Reestablished internet connection.>>"%log%"
 set /a internet=1
 set /a len=0
-for /f "usebackq eol=# tokens=1,2,3,* delims= " %%i in ("%sites%") do (
+for /f "usebackq eol=# tokens=1,2,3,4,* delims= " %%i in ("%sites%") do (
   if "%%i" NEQ "" (
     set /a len+=1
     set "dns[!len!]=%%i"
-    set "ip[!len!]=%%j"
-    set "email[!len!]=%%k"
-    set "name[!len!]=%%l"
+    set "ssl[!len!]=%%j"
+    set "ip[!len!]=%%k"
+    set "email[!len!]=%%l"
+    set "name[!len!]=%%m"
     set /a online[!len!]=-1
   )
 )
@@ -44,13 +45,20 @@ for /f "usebackq tokens=1,2 delims= " %%i in ("%state%") do (
   )
 )
 for /l %%i in (1,1,%len%) do (
-  curl --location --tlsv1.2 --ca-native --connect-timeout 5 --max-time 8 --fail --silent --output nul "!dns[%%i]!"
+  if "!ssl[%%i]!" EQU "ssl" (
+    set "param=--ca-native"
+    set "secureText= securely"
+  ) else (
+    set "param=--insecure"
+    set "secureText="
+  )
+  curl --location --tlsv1.2 !param! --connect-timeout 5 --max-time 8 --fail --silent --output nul "!dns[%%i]!"
   if !ErrorLevel! EQU 0 (
     if !online[%%i]!==0 (
       echo [!date! - !time!] Acquired connection to !name[%%i]!>>"%log%"
       set "email_to=!email[%%i]!"
       set "email_subject=!name[%%i]! Alarm - ONLINE"
-      set "email_body=!name[%%i]! is securely accessible at !dns[%%i]!"
+      set "email_body=!name[%%i]! is!secureText! accessible at !dns[%%i]!"
       call :email
     ) else if !online[%%i]! LSS %retries% if !online[%%i]! NEQ -1 (
       echo [!date! - !time!] Successfully pinged !name[%%i]!>>"%log%"
@@ -64,7 +72,7 @@ for /l %%i in (1,1,%len%) do (
       echo [!date! - !time!] Lost connection to !name[%%i]!>>"%log%"
       set "email_to=!email[%%i]!"
       set "email_subject=!name[%%i]! Alarm - OFFLINE"
-      set "email_body=!name[%%i]! is no longer securely accessible from !dns[%%i]!"
+      set "email_body=!name[%%i]! is no longer!secureText! accessible from !dns[%%i]!"
       if "!ip[%%i]!" NEQ "null" (
         ping -n 1 -w %ping_timeout% !ip[%%i]! | find "TTL=" >nul
         if !ErrorLevel! EQU 0 (
