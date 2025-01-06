@@ -13,3 +13,5 @@ cradlepoint-backup/data
 *.html
 webctrl-monitor/state.txt
 webctrl-monitor/sites.txt
+rclone-monitor/state.txt
+rclone-monitor/sites.txt

@@ -131,6 +131,18 @@ if ((New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsI
   }else{
     Write-Host "Skipping $name."
   }
+  $name = 'script-rclone-monitor'
+  if ($null -eq (Get-ScheduledTask -TaskName $name -ErrorAction 'Ignore')){
+    Write-Host "Installing $name..."
+    $trigger = New-ScheduledTaskTrigger -Daily -At '8:00am'
+    $principal = New-ScheduledTaskPrincipal -UserID 'NT AUTHORITY\SYSTEM' -LogonType 'ServiceAccount' -RunLevel 'Highest'
+    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 4) -MultipleInstances 'IgnoreNew' -Priority 7 -StartWhenAvailable -WakeToRun
+    $action = New-ScheduledTaskAction -Execute (Join-Path -Path (Split-Path -Parent $PSScriptRoot) -ChildPath 'rclone-monitor\exec.bat')
+    $task = New-ScheduledTask -Action $action -Principal $principal -Trigger $trigger -Settings $settings -Description 'Checks that Rclone backups are running and sends email notifications when one goes offline.'
+    $null = Register-ScheduledTask -InputObject $task -Force -TaskName $name
+  }else{
+    Write-Host "Skipping $name."
+  }
   $name = 'script-qqube-sync'
   if ($null -eq (Get-ScheduledTask -TaskName $name -ErrorAction 'Ignore')){
     Write-Host "Installing $name..."

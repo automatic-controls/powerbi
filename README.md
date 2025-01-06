@@ -44,6 +44,7 @@
     - [regfox](#regfox)
     - [cradlepoint](#cradlepoint)
     - [cradlepoint-backup](#cradlepoint-backup)
+    - [rclone-monitor](#rclone-monitor)
     - [webctrl-monitor](#webctrl-monitor)
   - [Development](#development)
 
@@ -186,6 +187,7 @@ The events shown in this table all affect **ACES-PowerBI**.
 | 6:00AM Daily | [synchrony](#synchrony) |
 | 7:00AM Daily | [regfox](#regfox) |
 | 7:30AM Daily | [verizon](#verizon) |
+| 8:00AM Daily | [rclone-monitor](#rclone-monitor) |
 | 12:00PM Daily | [qqube-sync](#qqube-sync) |
 
 ### [asana-ghost-clean](./asana-ghost-clean/)
@@ -339,6 +341,14 @@ The purpose of this script is to backup active Cradlepoint router and group conf
 4. [RClone] is used to upload the ZIP file to Dropbox with 365 day backup retention.
 
 If an error occurs at any step in the process, the batch script is configured to send email notifications. Detailed error information can be found in *./cradlepoint-backup/log.txt*.
+
+### [rclone-monitor](./rclone-monitor/)
+
+The purpose of this script is to ensure rclone backups continue to function as expected.
+
+1. A scheduled task (daily at 8:00AM) on **ACES-PowerBI** with name *script-rclone-monitor* executes a batch script: [*./rclone-monitor/exec.bat*](./rclone-monitor/exec.bat).
+2. The batch script checks a number of Dropbox folders using [RClone] to see if any zip files exist with a last-modified date sometime in the previous 2 days.
+3. If recent zip file backups do not exist, then an email notification is sent.
 
 ### [webctrl-monitor](./webctrl-monitor/)
 
