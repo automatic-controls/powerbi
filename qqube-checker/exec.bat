@@ -13,9 +13,9 @@ set "script=%~dp0mail_script.ps1"
     set "recipients=!error_email!;epitts@automaticcontrols.net"
     set "subject=QQube Sync Failure"
     if !err! EQU 1978 (
-      set "message=The QQube sync has failed. Please RDP into ACES-PowerBI as apps_admin and initiate a manual sync."
+      set "message=The QQube sync has failed. Please remote into ACES-PowerBI as apps_admin and initiate a manual sync."
     ) else (
-      set "message=The status of the QQube sync could not be determined. Please RDP into ACES-PowerBI as apps_admin and check for yourself."
+      set "message=The status of the QQube sync could not be determined. Please remote into ACES-PowerBI as apps_admin and check for yourself."
     )
   )
   call :email

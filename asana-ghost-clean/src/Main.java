@@ -103,6 +103,7 @@ public class Main {
               "    DELETE FROM asana_v2.projects WHERE gid=ANY(gids);\n"+
               "    DELETE FROM asana_v2.projects__custom_fields WHERE _sdc_source_key_gid=ANY(gids);\n"+
               "    DELETE FROM asana_v2.projects__custom_fields__enum_options WHERE _sdc_source_key_gid=ANY(gids);\n"+
+              "    DELETE FROM asana_v2.projects__custom_fields__multi_enum_values WHERE _sdc_source_key_gid=ANY(gids);\n"+
               "    DELETE FROM asana_v2.projects__followers WHERE _sdc_source_key_gid=ANY(gids);\n"+
               "    DELETE FROM asana_v2.projects__members WHERE _sdc_source_key_gid=ANY(gids);\n"+
               "    DELETE FROM asana_v2.tasks__projects WHERE gid=ANY(gids);\n"+
@@ -226,6 +227,8 @@ public class Main {
               "    DELETE FROM asana_v2.tasks WHERE gid=ANY(gids);\n"+
               "    DELETE FROM asana_v2.tasks__custom_fields WHERE _sdc_source_key_gid=ANY(gids);\n"+
               "    DELETE FROM asana_v2.tasks__custom_fields__enum_options WHERE _sdc_source_key_gid=ANY(gids);\n"+
+              "    DELETE FROM asana_v2.tasks__custom_fields__multi_enum_values WHERE _sdc_source_key_gid=ANY(gids);\n"+
+              "    DELETE FROM asana_v2.tasks__custom_fields__people_value WHERE _sdc_source_key_gid=ANY(gids);\n"+
               "    DELETE FROM asana_v2.tasks__dependencies WHERE _sdc_source_key_gid=ANY(gids);\n"+
               "    DELETE FROM asana_v2.tasks__dependents WHERE _sdc_source_key_gid=ANY(gids);\n"+
               "    DELETE FROM asana_v2.tasks__followers WHERE _sdc_source_key_gid=ANY(gids);\n"+

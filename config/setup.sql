@@ -377,6 +377,9 @@ CREATE TABLE quickbooks.jobs (
   "projected_end_date" DATE
 );
 CREATE INDEX quickbooks_jobs_id ON quickbooks.jobs ("id" ASC);
+-- quickbooks.sov
+--DROP TABLE IF EXISTS quickbooks.sov CASCADE;
+
 --*/
 
 --/*
