@@ -7,11 +7,10 @@ set "estimateFileRaw=%UserProfile%\Downloads\DCReportData.xlsx"
 set "estimateFile=%UserProfile%\Downloads\DCReportData.csv"
 set "marginFileRaw=%UserProfile%\Downloads\Margin Report.xlsx"
 set "marginFile=%UserProfile%\Downloads\Margin Report.csv"
-set "script=%~dp0mail_script.ps1"
+set "script=%root%mail-script.ps1"
 set "helper=%~dp0helper.ps1"
 
 (
-  if exist "%script%" del /F "%script%" >nul
   set "err=Error source is unknown."
   call :main
   if !ErrorLevel! EQU 0 (
@@ -38,12 +37,12 @@ exit /b
     set "err=Could not locate raw margin data file."
     exit /b 1
   )
-  PowerShell -NoLogo -File "%helper%" "%estimateFileRaw%"
+  pwsh -NoLogo -File "%helper%" "%estimateFileRaw%"
   if not exist "%estimateFile%" (
     set "err=Failed to convert raw estimates data file from XLSX to CSV."
     exit /b 1
   )
-  PowerShell -NoLogo -File "%helper%" "%marginFileRaw%"
+  pwsh -NoLogo -File "%helper%" "%marginFileRaw%"
   if not exist "%marginFile%" (
     set "err=Failed to convert raw margin data file from XLSX to CSV."
     exit /b 1
@@ -86,23 +85,21 @@ exit /b
 exit /b 0
 
 :email
-  (
-    echo Send-MailMessage -From "!pbi_email!" -To "!error_email!".Split^(";"^) -Subject "Bidtracer Import Failure" -Body "Script triggered by Power Automate failed to update database. %err%" -SmtpServer "smtp-mail.outlook.com" -Port 587 -UseSsl -Credential ^(New-Object PSCredential^("!pbi_email!", ^(ConvertTo-SecureString "!pbi_password!" -AsPlainText -Force^)^)^)
-    echo if ^( $? ^){ exit 0 }else{ exit 1 }
-  )>"%script%"
-  PowerShell -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%script%"
+  set "email_to=!error_email!"
+  set "email_subject=Bidtracer Import Failure"
+  set "email_body=Script triggered by Power Automate failed to update database. %err%"
+  pwsh -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%script%"
   if %ErrorLevel% NEQ 0 (
     echo [!date! - !time!] Failed to send email notification with 2 attempts left.>>"%~dp0log.txt"
     timeout /t 5 /nobreak >nul
-    PowerShell -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%script%"
+    pwsh -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%script%"
     if !ErrorLevel! NEQ 0 (
       echo [!date! - !time!] Failed to send email notification with 1 attempt left.>>"%~dp0log.txt"
       timeout /t 5 /nobreak >nul
-      PowerShell -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%script%"
+      pwsh -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%script%"
       if !ErrorLevel! NEQ 0 (
         echo [!date! - !time!] Failed to send email notification with 0 attempts left.>>"%~dp0log.txt"
       )
     )
   )
-  if exist "%script%" del /F "%script%" >nul
 exit /b 0

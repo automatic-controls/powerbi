@@ -20,7 +20,7 @@ set "table[10]=payroll.compensation"
 
 set "stamp=%date:~-4%-%date:~-10,2%-%date:~-7,2%"
 set "PGPASSWORD=!postgresql_pass!"
-set "script=%~dp0mail_script.ps1"
+set "script=%root%mail-script.ps1"
 set "tmpFile=%~dp0tmp.csv"
 set /a len=0
 :counter
@@ -72,23 +72,21 @@ set /a len-=1
 exit
 
 :email
-  (
-    echo Send-MailMessage -From "!pbi_email!" -To "!error_email!".Split^(";"^) -Subject "Database Backup Failure" -Body "This is an automated alert. Failed to backup tables in the PostgreSQL database See the log file for more details." -SmtpServer "smtp-mail.outlook.com" -Port 587 -UseSsl -Credential ^(New-Object PSCredential^("!pbi_email!", ^(ConvertTo-SecureString "!pbi_password!" -AsPlainText -Force^)^)^)
-    echo if ^( $? ^){ exit 0 }else{ exit 1 }
-  )>"%script%"
-  PowerShell -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%script%"
+  set "email_to=!error_email!"
+  set "email_subject=Database Backup Failure"
+  set "email_body=This is an automated alert. Failed to backup tables in the PostgreSQL database. See the log file for more details."
+  pwsh -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%script%"
   if %ErrorLevel% NEQ 0 (
     echo [!date! - !time!] Failed to send email notification with 2 attempts left.>>"%~dp0log.txt"
     timeout /t 5 /nobreak >nul
-    PowerShell -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%script%"
+    pwsh -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%script%"
     if !ErrorLevel! NEQ 0 (
       echo [!date! - !time!] Failed to send email notification with 1 attempt left.>>"%~dp0log.txt"
       timeout /t 5 /nobreak >nul
-      PowerShell -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%script%"
+      pwsh -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%script%"
       if !ErrorLevel! NEQ 0 (
         echo [!date! - !time!] Failed to send email notification with 0 attempts left.>>"%~dp0log.txt"
       )
     )
   )
-  if exist "%script%" del /F "%script%" >nul
 exit /b 0

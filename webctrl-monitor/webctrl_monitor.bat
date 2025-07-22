@@ -2,19 +2,19 @@
 title Webserver Monitor
 call "%~dp0../env_vars.bat"
 setlocal EnableDelayedExpansion
-set "smtp_server=smtp-mail.outlook.com"
 set "interval=120"
 set "ping_timeout=5000"
 set "retries=3"
-set "mscript=%~dp0mail_script.ps1"
+set "mscript=%root%mail-script.ps1"
 set "sites=%~dp0sites.txt"
 set "log=%~dp0log.txt"
 set "state=%~dp0state.txt"
+set "ntfy_msg=%~dp0ntfy.txt"
 echo ----- Webserver Monitor Started ----->>"%log%"
 echo [%date% - %time%]>>"%log%"
 set /a internet=1
 :loop
-ping -n 1 -w %ping_timeout% %smtp_server% | find "TTL=" >nul
+ping -n 1 -w %ping_timeout% 8.8.8.8 | find "TTL=" >nul
 if %ErrorLevel% NEQ 0 (
   if %internet% EQU 1 echo [!date! - !time!] Waiting for internet connection...>>"%log%"
   set /a internet=0
@@ -24,14 +24,15 @@ if %ErrorLevel% NEQ 0 (
 if %internet% EQU 0 echo [!date! - !time!] Reestablished internet connection.>>"%log%"
 set /a internet=1
 set /a len=0
-for /f "usebackq eol=# tokens=1,2,3,4,* delims= " %%i in ("%sites%") do (
+for /f "usebackq eol=# tokens=1,2,3,4,5,* delims= " %%i in ("%sites%") do (
   if "%%i" NEQ "" (
     set /a len+=1
     set "dns[!len!]=%%i"
     set "ssl[!len!]=%%j"
     set "ip[!len!]=%%k"
     set "email[!len!]=%%l"
-    set "name[!len!]=%%m"
+    set "ntfy[!len!]=%%m"
+    set "name[!len!]=%%n"
     set /a online[!len!]=-1
   )
 )
@@ -59,6 +60,8 @@ for /l %%i in (1,1,%len%) do (
       set "email_to=!email[%%i]!"
       set "email_subject=!name[%%i]! Alarm - ONLINE"
       set "email_body=!name[%%i]! is!secureText! accessible at !dns[%%i]!"
+      echo !email_body!>"%ntfy_msg%"
+      set "topic=!ntfy[%%i]!"
       call :email
     ) else if !online[%%i]! LSS %retries% if !online[%%i]! NEQ -1 (
       echo [!date! - !time!] Successfully pinged !name[%%i]!>>"%log%"
@@ -73,14 +76,18 @@ for /l %%i in (1,1,%len%) do (
       set "email_to=!email[%%i]!"
       set "email_subject=!name[%%i]! Alarm - OFFLINE"
       set "email_body=!name[%%i]! is no longer!secureText! accessible from !dns[%%i]!"
+      echo !email_body!>"%ntfy_msg%"
       if "!ip[%%i]!" NEQ "null" (
         ping -n 1 -w %ping_timeout% !ip[%%i]! | find "TTL=" >nul
         if !ErrorLevel! EQU 0 (
-          set "email_body=!email_body!`r`nRaw address !ip[%%i]! responds to pings."
+          set "email_body=!email_body!. Raw address !ip[%%i]! responds to pings."
+          echo Raw address !ip[%%i]! responds to pings.>>"%ntfy_msg%"
         ) else (
-          set "email_body=!email_body!`r`nRaw address !ip[%%i]! does not respond to pings."
+          set "email_body=!email_body!. Raw address !ip[%%i]! does not respond to pings."
+          echo Raw address !ip[%%i]! does not respond to pings.>>"%ntfy_msg%"
         )
       )
+      set "topic=!ntfy[%%i]!"
       call :email
     ) else (
       echo [!date! - !time!] Failed to ping !name[%%i]! with !online[%%i]! attempts left>>"%log%"
@@ -96,23 +103,21 @@ timeout /t %interval% /nobreak >nul
 goto loop
 
 :email
-  (
-    echo Send-MailMessage -From "!pbi_email!" -To "!email_to!".Split^(";"^) -Subject "!email_subject!" -Body "!email_body!" -SmtpServer "%smtp_server%" -Port 587 -UseSsl -Credential ^(New-Object PSCredential^("!pbi_email!", ^(ConvertTo-SecureString "!pbi_password!" -AsPlainText -Force^)^)^)
-    echo if ^( $? ^){ exit 0 }else{ exit 1 }
-  )>"%mscript%"
-  PowerShell -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%mscript%"
+  if "!topic!" NEQ "null" (
+    curl --location --tlsv1.2 --connect-timeout 5 --max-time 8 --fail --silent --output nul --data-binary "@%ntfy_msg%" -H "Title: !email_subject!" "%ntfy_server%!topic!?auth=!ntfy_auth!"
+  )
+  pwsh -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%mscript%"
   if %ErrorLevel% NEQ 0 (
     echo [!date! - !time!] Failed to send email notification with 2 attempts left.>>"%~dp0log.txt"
     timeout /t 5 /nobreak >nul
-    PowerShell -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%mscript%"
+    pwsh -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%mscript%"
     if !ErrorLevel! NEQ 0 (
       echo [!date! - !time!] Failed to send email notification with 1 attempt left.>>"%~dp0log.txt"
       timeout /t 5 /nobreak >nul
-      PowerShell -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%mscript%"
+      pwsh -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%mscript%"
       if !ErrorLevel! NEQ 0 (
         echo [!date! - !time!] Failed to send email notification with 0 attempts left.>>"%~dp0log.txt"
       )
     )
   )
-  if exist "%mscript%" del /F "%mscript%" >nul
 exit /b 0

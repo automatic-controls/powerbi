@@ -1,29 +1,44 @@
-import java.util.Properties;
-import jakarta.mail.*;
-import jakarta.mail.internet.*;
+import java.util.*;
+import com.azure.identity.*;
+import com.microsoft.graph.models.*;
+import com.microsoft.graph.serviceclient.*;
+import com.microsoft.graph.users.item.sendmail.SendMailPostRequestBody;
 public class Emailer {
-  private volatile static Session s;
-  private volatile static InternetAddress from;
+  private volatile static String[] scopes;
+  private volatile static ClientCertificateCredential cred;
+  private volatile static GraphServiceClient client = null;
   public static void init() throws Throwable {
-    final Properties props = new Properties();
-    props.setProperty("mail.smtp.auth", "true");
-    props.setProperty("mail.smtp.starttls.enable", "true");
-    props.setProperty("mail.smtp.ssl.protocols", "TLSv1.2");
-    props.setProperty("mail.smtp.host", "smtp-mail.outlook.com");
-    props.setProperty("mail.smtp.port", "587");
-    s = Session.getInstance(props, new Authenticator(){
-      @Override protected PasswordAuthentication getPasswordAuthentication(){
-        return new PasswordAuthentication(Env.pbi_email, Env.pbi_password);
-      }
-    });
-    from = new InternetAddress(Env.pbi_email);
+    scopes = new String[]{"https://graph.microsoft.com/.default"};
+    cred = new ClientCertificateCredentialBuilder()
+      .clientId(Env.email_app_id)
+      .tenantId(Env.email_tenant_id)
+      .pfxCertificate(Env.email_keystore)
+      .clientCertificatePassword(Env.email_keystore_password)
+      .build();
   }
   public static void send(String recipients, String subject, String content, boolean html) throws Throwable {
-    final MimeMessage message = new MimeMessage(s);
-    message.setFrom(from);
-    message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipients));
-    message.setSubject(subject);
-    message.setText(content, "UTF-8", html?"html":"plain");
-    Transport.send(message);
+    if (client==null){
+      client = new GraphServiceClient(cred, scopes);
+    }
+    String[] recips = recipients.split(",");
+    ArrayList<Recipient> recipientList = new ArrayList<>(recips.length);
+    for (String email : recips) {
+      Recipient recipient = new Recipient();
+      EmailAddress emailAddress = new EmailAddress();
+      emailAddress.setAddress(email.trim());
+      recipient.setEmailAddress(emailAddress);
+      recipientList.add(recipient);
+    }
+    final Message msg = new Message();
+    msg.setSubject(subject);
+    msg.setToRecipients(recipientList);
+    final ItemBody body = new ItemBody();
+    body.setContentType(html ? BodyType.Html : BodyType.Text);
+    body.setContent(content);
+    msg.setBody(body);
+    final SendMailPostRequestBody sendMailBody = new SendMailPostRequestBody();
+    sendMailBody.setMessage(msg);
+    sendMailBody.setSaveToSentItems(false);
+    client.users().byUserId(Env.pbi_email).sendMail().post(sendMailBody);
   }
 }

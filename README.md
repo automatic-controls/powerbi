@@ -17,7 +17,7 @@
 [QQube]: https://clearify.com/wiki/view/6172/advanced-users-and-power-bi-developers
 [Microsoft Teams]: https://www.microsoft.com/en-us/microsoft-teams/group-chat-software
 [GitHub]: https://github.com/automatic-controls/powerbi
-[Verizon Connect]: https://reveal.fleetmatics.com/login.aspx
+[Verizon Connect]: https://www.verizonconnect.com/login/
 [Verizon Developer Connect]: https://fim.us.fleetmatics.com/
 [RClone]: https://rclone.org/onedrive/
 
@@ -50,47 +50,47 @@
 
 ## Data Flowchart
 
-Circle nodes denote a user-facing endpoint. Cylinder nodes denote a type of data storage container. Hexagon nodes specify a data processing machanism where we have complete, fine-grained control over all steps in the procedure. Rhombus nodes indicate a data processing mechanism over which we do not have complete control. Dotted arrows represent data transfers occurring through a RESTful web API. The exception to this rule is [Quickbooks Desktop][Quickbooks] which exposes data through an SDK. However, it is our intention to migrate to [Quickbooks Online][Quickbooks] eventually, which does include a RESTful web API.
+Circle nodes denote a user-facing endpoint. Cylinder nodes denote a type of data storage container. Hexagon nodes specify a data processing machanism where we have complete, fine-grained control over all steps in the procedure. Rhombus nodes indicate a data processing mechanism over which we do not have complete control. Dotted arrows represent data transfers occurring through a RESTful web API. The exception to this rule is [Quickbooks Desktop][Quickbooks] which exposes data through an SDK.
 
 ```mermaid
 flowchart LR
-  powerbi((Power BI\nReports))
-  quickbooks((Quickbooks\nDesktop))
+  powerbi((Power BI<br>Reports))
+  quickbooks((Quickbooks<br>Desktop))
   asana((Asana))
   zendesk((Zendesk))
   pipedrive((Pipedrive))
-  ga((Google\nAnalytics))
+  ga((Google<br>Analytics))
   mc((Mailchimp))
-  excel((Excel\nSpreadsheets))
+  excel((Excel<br>Spreadsheets))
   cradlepoint((Cradlepoint))
   bidtracer((Bidtracer))
-  reg_script{{Batch File\nScript}}
+  reg_script{{Batch File<br>Script}}
   sharepoint[(Sharepoint)]
   sharepoint2[(Sharepoint)]
-  qq_database[(SQL Anywhere\nDatabase)]
-  postgresql[(PostgreSQL\nDatabase)]
+  qq_database[(SQL Anywhere<br>Database)]
+  postgresql[(PostgreSQL<br>Database)]
   qqube{QQube}
   stitch{Stitch}
-  power_auto{{Power\nAutomate}}
-  qq_dataflows{{Power BI\nDataflows}}
-  qq_script{{Java Application\nScripts}}
+  power_auto{{Power<br>Automate}}
+  qq_dataflows{{Power BI<br>Dataflows}}
+  qq_script{{Java Application<br>Scripts}}
   cradle_script{{Python Script}}
-  bid_upload{{Batch File\nScript}}
+  bid_upload{{Batch File<br>Script}}
   excel---->sharepoint---->powerbi-->validate>Data Validation]
-  regfox((RegFox))-->reg_email{Scheduled\nEmail}-->reg_azure{{Azure Logic\nApp}}-->sharepoint
+  regfox((RegFox))-->reg_email{Scheduled<br>Email}-->reg_azure{{Azure Logic<br>App}}-->sharepoint
   sharepoint-->reg_script-->sharepoint
   qq_script-->validate
   quickbooks-..->qqube-->qq_database-->powerbi
   qq_database-->qq_dataflows-->powerbi
   qq_database-->qq_script-->postgresql-->powerbi
-  verizon((Verizon\nConnect)) & synchrony((Synchrony))-->ver_email{Scheduled\nEmail}-->ver_azure{{Azure Logic\nApp}}-->sharepoint2-->ver_script{{Batch File\nScript}}-->postgresql
-  synchrony-..->sync_java_scripts{{Java Application\nScripts}}-->postgresql
+  verizon((Verizon<br>Connect)) & synchrony((Synchrony))-->ver_email{Scheduled<br>Email}-->ver_azure{{Azure Logic<br>App}}-->sharepoint2-->ver_script{{Batch File<br>Script}}-->postgresql
+  synchrony-..->sync_java_scripts{{Java Application<br>Scripts}}-->postgresql
   bidtracer---->power_auto-->bid_upload-->postgresql
   cradlepoint-....->cradle_script-->postgresql
   zendesk & pipedrive & ga & mc & asana-..->stitch---->postgresql
-  postgresql<==>trigger{{PL/pgSQL Trigger\nFunctions}} & process{{Java Application\nScripts}}
+  postgresql<==>trigger{{PL/pgSQL Trigger<br>Functions}} & process{{Java Application<br>Scripts}}
   asana-.->process
-  process-->validate(((Data\nValidation)))
+  process-->validate(((Data<br>Validation)))
 ```
 
 | Data Source | Description |
@@ -110,7 +110,7 @@ flowchart LR
 
 ## Languages
 
-These languages are listed in approximate order of their importance. You should have a decent understanding of every language listed here if you hope to maintain and/or update the existing architecture we use for Power BI. You should also be familiar with [GitHub].
+These languages are listed in approximate order of their importance. You should have a decent understanding of every language listed here if you hope to maintain and/or update the existing architecture we use for Power BI.
 
 | Language | Primary Usage |
 | - | - |
@@ -119,27 +119,27 @@ These languages are listed in approximate order of their importance. You should 
 | [Java](https://jdk.java.net/) | Desktop applications to gather, process, and organize data |
 | [Power Query M Formula](https://learn.microsoft.com/en-us/powerquery-m/) | Simple data manipulation in Power BI |
 | [Batch Files](https://learn.openwaterfoundation.org/owf-learn-windows-shell/) | Scripts to process and move around data |
+| [Powershell](https://github.com/PowerShell/PowerShell) | Scripts to process and move around data |
 | [Regular Expressions](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions/Cheatsheet) | Parses data from text fields |
-| [PowerShell](https://learn.microsoft.com/en-us/powershell/) | Scripts for operations that batch files do not support |
 | [SQL Anywhere](https://help.sap.com/docs/SAP_SQL_Anywhere/93079d4ba8e44920ae63ffb4def91f5b/f3c043ea50ed48e68b1c73774e2a2608.html) | Financial database queries |
 | [Python](https://www.python.org/) | Script to extract API data |
 | [Markdown](https://www.markdownguide.org/) | Documentation |
 
 ## Overview
 
-All scripts and power BI automation are based out of the **ACES-PowerBI** server. When connected to the ACES network, you can RDP into the server. Most scripts on the server are triggered using scheduled tasks.
+All scripts and power BI automation are based out of the **ACES-PowerBI** server. Most scripts on the server are triggered using scheduled tasks.
 
 When errors occur, scripts are typically configured to send email notifications. There are multiple places required to change the recipients of these notifications. The first place is the `error_email` variable in the *./env_vars.bat* script located at the root of this repository. The second place is in all the [Power Automate] cloud flows (*Power BI notifications forwarding* and *Bidtracer Trigger*). The third place is in all the [Power Automate] desktop flows on **ACES-PowerBI** (*Bidtracer*).
 
-Recently, I created an email group, <pbinotify@automaticcontrols.net>, and set all locations to point to this. So you are better off just changing the members of this group to add/remove PBI notification recipients.
+I created an email group, <pbinotify@automaticcontrols.net>, and set all locations to point to this. So you are better off just changing the members of this group to add/remove PBI notification recipients.
 
-Most data is sent to a PostgreSQL database for processing and historical storage before Power BI reports ever touch it. I would suggest inspecting this database with [Azure Data Studio](https://azure.microsoft.com/en-us/products/data-studio/) to get familiar with its structure.
+Most data is sent to a PostgreSQL database for processing and historical storage before Power BI reports ever touch it. I would suggest inspecting this database with [Visual Studio Code](https://code.visualstudio.com/) and the [PostgreSQL extension](https://marketplace.visualstudio.com/items?itemName=ms-ossdata.vscode-pgsql) to get familiar with its structure.
 
 For accessing the database via command line or batch scripts, I suggest using PSQL, which can be downloaded as a stand-alone command line tool using the [PostgreSQL](https://www.postgresql.org/download/) installer. For accessing the database with a Java application, I suggest using the latest [JDBC connector](https://jdbc.postgresql.org/download/).
 
-There is a secondary [SQL Anywhere](https://help.sap.com/docs/SAP_SQL_Anywhere) database which is only used for [Quickbooks] financial data. [QQube] synchronizes data daily from the desktop version of Quickbooks (located on **ACES-PowerBI**). This database can only be directly accessed from  **ACES-PowerBI**, so you'll have to RDP into it and use `dsn=QQubeFinancials` or `dsn=QQubeUser`. If prompted for a password, it is `Financials` and `User`, respectively for each DSN.
+There is a secondary [SQL Anywhere](https://help.sap.com/docs/SAP_SQL_Anywhere) database which is only used for [Quickbooks] financial data. [QQube] synchronizes data daily from the desktop version of Quickbooks (located on **ACES-PowerBI**). This database can only be directly accessed from  **ACES-PowerBI**, so you'll have to remote into it and use `dsn=QQubeFinancials` or `dsn=QQubeUser`. If prompted for a password, it is `Financials` and `User`, respectively for each DSN.
 
-For convenience, there exists a Java application which synchronizes one job table in the QQube database to PostgreSQL. There are also a few [dataflows](https://learn.microsoft.com/en-us/power-bi/transform-model/dataflows/dataflows-create) which gather and preprocess particular piecees of data from the QQube database. Both of these options allow bits of the QQube database to be accessible from outside of **ACES-PowerBI**.
+For convenience, there exists a Java application which synchronizes a couple table in the QQube database to PostgreSQL. There are also a few [dataflows](https://learn.microsoft.com/en-us/power-bi/transform-model/dataflows/dataflows-create) which gather and preprocess particular piecees of data from the QQube database. Both of these options allow bits of the QQube database to be accessible from outside of **ACES-PowerBI**.
 
 Note that there is a bug in Power BI when querying dataflows. The data will appear to refresh perfectly in PBI desktop, but then it will mysteriously fail when refreshed from the PBI service. The cause of this bug is a `version` tag which is automatically generated by the PBI desktop editor. This tag must be manually removed when collecting data from dataflows. See the following screenshots.
 
@@ -160,13 +160,13 @@ The PostgreSQL database lives on an AWS EC2 Ubuntu instance. Since Power BI does
 
 | Data Source | Integration Schedule |
 | - | - |
-| [Asana] | Every 24 hours |
+| [Asana] | Every 6 hours |
 | [Zendesk] | Every 12 hours |
 | [Pipedrive] | Every 12 hours |
 | [Mailchimp] | Every 12 hours |
 | [Google Analytics] | Disabled |
 
-There are a few problems with the Stitch integrations. Since the Asana integration takes a long time to synchronize everything, it is on my TODO list to create a Java application which replaces this functionality. When nodes are deleted from the source, Stitch will not delete them from the database. Stitch only updates existing nodes or creates new nodes. This is most problematic for Asana, which is why I created a Java application to delete these ghost nodes from the Asana database.
+There are a few problems with the Stitch integrations. When nodes are deleted from the source, Stitch will not delete them from the database. Stitch only updates existing nodes or creates new nodes. This is most problematic for Asana, which is why I created a Java application to delete these ghost nodes from the Asana database.
 
 ### Script Timing Summary
 
@@ -236,12 +236,12 @@ If an error occurs at any step in the process, the batch script is configured to
 
 ### [qqube-sync](./qqube-sync/)
 
-The purpose of this script is to synchronize a [Quickbooks] job table from the SQL Anywhere database to the PostgreSQL database.
+The purpose of this script is to synchronize a couple [Quickbooks] tables from the SQL Anywhere database to the PostgreSQL database.
 
 1. [QQube] synchronizes data from Quickbooks into the SQL Anywhere database at 2:00AM every day.
 2. A scheduled task (everyday at 12:00PM) on **ACES-PowerBI** with name *script-qqube-sync* executes a batch script: [*./qqube-sync/exec.bat*](./qqube-sync/exec.bat).
 3. The batch script executes a Java application *./qqube-sync/qqube-sync.jar*.
-4. The Java application copies data from `QQubeUser.vd_Job` in the SQL Anywhere database to `quickbooks.jobs` in the PostgreSQL database using last-modified timestamps to determine what needs updating.
+4. The Java application copies data from the SQL Anywhere database to the PostgreSQL database using last-modified timestamps to determine what needs updating.
 
 If an error occurs at any step in the process, the batch script is configured to send email notifications. Detailed error information can be found in *./qqube-sync/log.txt*.
 
@@ -294,7 +294,7 @@ If an error occurs at any step in the process, the batch script is configured to
 
 The purpose of this script is to gather data from [Verizon Connect] and upload it to the PostgreSQL database. Collected data includes GPS ping locations on ACES vehicles (taken every 30 seconds). Additionally, safety violations such as speeding and hard-braking are recorded.
 
-1. <powerbi@automaticcontrols.net> receives four emails from Verizon (no-reply@verizonconnect.com) everyday between 4:00AM and 6:00AM. Each email contains one report in CSV format. Each report corresponds to one table in the PostgreSQL database: *movements*, *speeding*, *incidents*, and *services*.
+1. <powerbi@automaticcontrols.net> receives emails from Verizon (no-reply@verizonconnect.com) everyday between 4:00AM and 6:00AM. Each email contains one report in CSV format. Each report corresponds to one table in the PostgreSQL database: *movements*, *speeding*, *incidents*, *maintenance*, and *services*.
 2. The **verizon-email-capture** logic app on [Azure Portal] captures emails from Verizon with subject containing the phrase: *Scheduled Report*.
 3. Attachments from captured emails are uploaded to [Sharepoint].
 4. Captured emails are moved to the *deleted* mailbox.
@@ -314,8 +314,8 @@ If an error occurs at any step in the process, the batch script is configured to
 4. The captured email is moved to the *deleted* mailbox.
 5. A scheduled task (daily at 7:00AM) on **ACES-PowerBI** with name *script-regfox* executes a batch script: [*./regfox/import.bat*](./regfox/import.bat).
 6. The script retrieves the email body from [Sharepoint] using [RClone].
-7. The script uses *PowerShell* ([*./regfox/parse.ps1*](./regfox/parse.ps1)) to retrieve a download URL from *./regfox/body.html*.
-8. The script uses [*Curl 7.84.0*](https://curl.se/windows/) to download a CSV document from the URL.
+7. The script uses *pwsh* ([*./regfox/parse.ps1*](./regfox/parse.ps1)) to retrieve a download URL from *./regfox/body.html*.
+8. The script uses [*Curl*](https://curl.se/windows/) to download a CSV document from the URL.
 9. The CSV document is uploaded to [Sharepoint] using [RClone].
 10. The script deletes *./regfox/body.html*.
 
@@ -336,7 +336,7 @@ If an error occurs at any step in the process, the batch script is configured to
 The purpose of this script is to backup active Cradlepoint router and group configurations.
 
 1. A scheduled task (daily at 4:30AM) on **ACES-PowerBI** with name *script-cradlepoint-backup* executes a batch script: [*./cradlepoint-backup/exec.bat*](./cradlepoint-backup/exec.bat).
-2. The batch script executes a PowerShell script, [*./cradlepoint-backup/backup.ps1*](./cradlepoint-backup/backup.ps1), which downloads router and group configurations from the [Cradlepoint API]((https://developer.cradlepoint.com/)) using [Curl](https://curl.se/).
+2. The batch script executes a pwsh script, [*./cradlepoint-backup/backup.ps1*](./cradlepoint-backup/backup.ps1), which downloads router and group configurations from the [Cradlepoint API]((https://developer.cradlepoint.com/)) using [Curl](https://curl.se/).
 3. A Java utility, *jar.exe*, is used to compress the JSON configurations into a ZIP file.
 4. [RClone] is used to upload the ZIP file to Dropbox with 365 day backup retention.
 
@@ -356,19 +356,19 @@ The purpose of this script is to continuously monitor webservers for uptime, and
 
 ## Development
 
-This section describes a few prerequisites for getting the scripts in this repository to function correctly. Some scripts may not work outside of **ACES-PowerBI** at all, but others could have partial functionality. The location of this repository on **ACES-PowerBI** is *C:\ACES\scripts*.
+This section describes a few prerequisites for getting the scripts in this repository to function correctly. Some scripts may not work outside of **ACES-PowerBI** at all, but others could have partial functionality.
 
 1. Clone this repository to your computer.
-2. Install the latest [JDK](https://jdk.java.net/), [PSQL](https://www.postgresql.org/download/), [Curl](https://curl.se/windows/), [RClone](https://rclone.org/downloads/), [Python](https://www.python.org/downloads/), and [PowerShell](https://github.com/PowerShell/PowerShell).
+2. Install the latest [JDK](https://jdk.java.net/), [PSQL](https://www.postgresql.org/download/), [Curl](https://curl.se/windows/), [RClone](https://rclone.org/downloads/), [Python](https://www.python.org/downloads/), and [pwsh](https://github.com/pwsh/pwsh).
 3. Ensure the *./bin* folder of each installation is added to your *PATH* environment variable. Also set the *JAVA_HOME* environment variable.
 4. Install the Python [requests](https://pypi.org/project/requests/) and [psycopg2](https://pypi.org/project/psycopg2/) packages with *pip*.
 5. Create a batch file *./env_vars.bat* in the root of this repository. Populate it with the required credentials. An example is shown below.
 
 ```bat
+set "root=%~dp0"
 set "lib=%~dp0lib"
 set "attempts=3"
 set "pbi_email=pbi@email.com"
-set "pbi_password=12345678"
 set "error_email=abcdefghijk@amer.teams.ms;username@automaticcontrols.net"
 set "postgresql_url=postgresql.database.net"
 set "postgresql_port=5432"
@@ -382,6 +382,12 @@ set "X_CP_API_ID=234dg58723"
 set "X_CP_API_KEY=b724bvsnfdcxy7y473e84c3bt68bw6ntfr34"
 set "X_ECM_API_ID=n7c34ybbc-3chsgtbuytgfrvbeuy-4v5hr75hvjdf"
 set "X_ECM_API_KEY=nbghregbuyfgebu43c8745ynt8nf85t43y8nf654"
+set "email_app_id=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxxx"
+set "email_tenant_id=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxxx"
+set "email_keystore=%~dp0email.pfx"
+set "email_keystore_password=12345678"
+set "ntfy_server=https://ntfy.domain.net/"
+set "ntfy_auth=nbghregbuyfgebu43c8745ynt8nf85t43y8nf654"
 ```
 
 4. Execute [*./collect.bat*](./collect.bat) to download required dependencies.

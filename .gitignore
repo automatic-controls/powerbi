@@ -13,6 +13,10 @@ cradlepoint-backup/data
 *.html
 webctrl-monitor/state.txt
 webctrl-monitor/sites.txt
+webctrl-monitor/ntfy.txt
 rclone-monitor/state.txt
 rclone-monitor/sites.txt
+zendesk-validate/target
 *_dsc_*.*
+queries
+email.pfx

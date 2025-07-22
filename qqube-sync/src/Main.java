@@ -16,7 +16,9 @@ public class Main {
         System.out.println("Required environment variable(s) not defined.");
         return false;
       }
-      final String query = new String(Files.readAllBytes(Paths.get(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParent().resolve("query.sql")), java.nio.charset.StandardCharsets.UTF_8);
+      final Path folder = Paths.get(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParent();
+      final String query = new String(Files.readAllBytes(folder.resolve("query.sql")), java.nio.charset.StandardCharsets.UTF_8);
+      final String query2 = new String(Files.readAllBytes(folder.resolve("query2.sql")), java.nio.charset.StandardCharsets.UTF_8);
       long updates = 0;
       Timestamp lastModified = null;
       for (int i=0;i<Env.attempts;++i){
@@ -44,41 +46,76 @@ public class Main {
             }
             try(
               Connection qqube = DriverManager.getConnection("jdbc:sqlanywhere:DSN=QQubeFinancials");
-              PreparedStatement qqubeStatement = qqube.prepareStatement(query);
             ){
-              qqubeStatement.setTimestamp(1, lastModified);
               try(
-                ResultSet updatedJobs = qqubeStatement.executeQuery();
-                PreparedStatement deleteStatement = postgresql.prepareStatement("DELETE FROM quickbooks.jobs WHERE \"id\"=?;");
-                PreparedStatement insertStatement = postgresql.prepareStatement("INSERT INTO quickbooks.jobs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);");
+                PreparedStatement qqubeStatement = qqube.prepareStatement(query);
               ){
-                while (updatedJobs.next()){
-                  deleteStatement.setString(1, updatedJobs.getString(2));
-                  insertStatement.setString(1, updatedJobs.getString(1));
-                  insertStatement.setString(2, updatedJobs.getString(2));
-                  insertStatement.setBoolean(3, updatedJobs.getBoolean(3));
-                  insertStatement.setString(4, updatedJobs.getString(4));
-                  insertStatement.setString(5, updatedJobs.getString(5));
-                  insertStatement.setString(6, updatedJobs.getString(6));
-                  insertStatement.setString(7, updatedJobs.getString(7));
-                  insertStatement.setString(8, updatedJobs.getString(8));
-                  insertStatement.setString(9, updatedJobs.getString(9));
-                  insertStatement.setBigDecimal(10, updatedJobs.getBigDecimal(10));
-                  insertStatement.setBigDecimal(11, updatedJobs.getBigDecimal(11));
-                  insertStatement.setBigDecimal(12, updatedJobs.getBigDecimal(12));
-                  insertStatement.setBigDecimal(13, updatedJobs.getBigDecimal(13));
-                  insertStatement.setBigDecimal(14, updatedJobs.getBigDecimal(14));
-                  insertStatement.setTimestamp(15, updatedJobs.getTimestamp(15));
-                  insertStatement.setTimestamp(16, updatedJobs.getTimestamp(16));
-                  insertStatement.setDate(17, updatedJobs.getDate(17));
-                  insertStatement.setDate(18, updatedJobs.getDate(18));
-                  insertStatement.setDate(19, updatedJobs.getDate(19));
-                  deleteStatement.executeUpdate();
-                  insertStatement.executeUpdate();
-                  postgresql.commit();
-                  ++updates;
+                qqubeStatement.setTimestamp(1, lastModified);
+                try(
+                  ResultSet updatedJobs = qqubeStatement.executeQuery();
+                  PreparedStatement deleteStatement = postgresql.prepareStatement("DELETE FROM quickbooks.jobs WHERE \"id\"=?;");
+                  PreparedStatement insertStatement = postgresql.prepareStatement("INSERT INTO quickbooks.jobs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);");
+                ){
+                  while (updatedJobs.next()){
+                    deleteStatement.setString(1, updatedJobs.getString(2));
+                    insertStatement.setString(1, updatedJobs.getString(1));
+                    insertStatement.setString(2, updatedJobs.getString(2));
+                    insertStatement.setBoolean(3, updatedJobs.getBoolean(3));
+                    insertStatement.setString(4, updatedJobs.getString(4));
+                    insertStatement.setString(5, updatedJobs.getString(5));
+                    insertStatement.setString(6, updatedJobs.getString(6));
+                    insertStatement.setString(7, updatedJobs.getString(7));
+                    insertStatement.setString(8, updatedJobs.getString(8));
+                    insertStatement.setString(9, updatedJobs.getString(9));
+                    insertStatement.setBigDecimal(10, updatedJobs.getBigDecimal(10));
+                    insertStatement.setBigDecimal(11, updatedJobs.getBigDecimal(11));
+                    insertStatement.setBigDecimal(12, updatedJobs.getBigDecimal(12));
+                    insertStatement.setBigDecimal(13, updatedJobs.getBigDecimal(13));
+                    insertStatement.setBigDecimal(14, updatedJobs.getBigDecimal(14));
+                    insertStatement.setTimestamp(15, updatedJobs.getTimestamp(15));
+                    insertStatement.setTimestamp(16, updatedJobs.getTimestamp(16));
+                    insertStatement.setDate(17, updatedJobs.getDate(17));
+                    insertStatement.setDate(18, updatedJobs.getDate(18));
+                    insertStatement.setDate(19, updatedJobs.getDate(19));
+                    insertStatement.setBigDecimal(20, updatedJobs.getBigDecimal(20));
+                    deleteStatement.executeUpdate();
+                    insertStatement.executeUpdate();
+                    postgresql.commit();
+                    ++updates;
+                  }
                 }
               }
+              try(
+                Statement s = postgresql.createStatement();
+              ){
+                s.executeUpdate("TRUNCATE TABLE quickbooks.jobs_billing;");
+              }
+              try(
+                Statement s = qqube.createStatement();
+                ResultSet r = s.executeQuery(query2);
+                PreparedStatement ps = postgresql.prepareStatement("INSERT INTO quickbooks.jobs_billing VALUES (?,?,?);");
+              ){
+                String d;
+                int y,m;
+                while (r.next()){
+                  ps.setString(1, r.getString(1));
+                  ps.setLong(2, r.getLong(2));
+                  d = r.getString(3);
+                  if (d==null || d.length()!=7){
+                    continue;
+                  }
+                  try{
+                    y = Integer.parseInt(d.substring(0,4));
+                    m = Integer.parseInt(d.substring(5));
+                    ps.setInt(3, m-1+(y-2000)*12);
+                  }catch(NumberFormatException e){
+                    continue;
+                  }
+                  ps.addBatch();
+                }
+                ps.executeBatch();
+              }
+              postgresql.commit();
             }
             try(
               Statement s = postgresql.createStatement();

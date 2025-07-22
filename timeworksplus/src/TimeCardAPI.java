@@ -8,6 +8,7 @@ import java.time.format.*;
 import com.google.gson.*;
 import java.io.*;
 public class TimeCardAPI {
+  private final static boolean debug = true;
   private final static boolean everything = false;
   private static String TODAY = null;
   private static String ONE_WEEK_AGO = null;
@@ -69,6 +70,9 @@ public class TimeCardAPI {
     }
   }
   private ArrayList<Accrual> getAccruals(HashSet<String> employees) throws Throwable {
+    if (debug){
+      System.out.println("Fetching accruals...");
+    }
     generateToken();
     final URL url = new URI(accrualsURL).toURL();
     Throwable e = null;
@@ -95,8 +99,14 @@ public class TimeCardAPI {
             if (code==401){
               tokenExpiration = -1;
             }else if (code==429){
+              if (debug){
+                System.out.println("Rate limit exceeded. Retrying in 60 seconds...");
+              }
               Thread.sleep(60000L);
             }else{
+              if (debug){
+                System.out.println("Error code: "+code+". Retrying in 30 seconds...");
+              }
               Thread.sleep(30000L);
             }
             generateToken();
@@ -145,6 +155,9 @@ public class TimeCardAPI {
         entries.clear();
         e = ee;
         if (i+1<Env.attempts){
+          if (debug){
+            System.out.println("An error occurred while fetching accruals. Retrying in 30 seconds...");
+          }
           Thread.sleep(30000L);
         }
       }
@@ -155,6 +168,9 @@ public class TimeCardAPI {
     return entries;
   }
   private ArrayList<PtoRequest> getPTO(String employeeCode) throws Throwable {
+    if (debug){
+      System.out.println("Fetching PTO for "+employeeCode+"...");
+    }
     generateToken();
     final URL url = new URI(Utility.format(ptoURL, employeeCode)).toURL();
     Throwable e = null;
@@ -181,8 +197,14 @@ public class TimeCardAPI {
             if (code==401){
               tokenExpiration = -1;
             }else if (code==429){
+              if (debug){
+                System.out.println("Rate limit exceeded. Retrying in 60 seconds...");
+              }
               Thread.sleep(60000L);
             }else{
+              if (debug){
+                System.out.println("Error code: "+code+". Retrying in 30 seconds...");
+              }
               Thread.sleep(30000L);
             }
             generateToken();
@@ -234,6 +256,9 @@ public class TimeCardAPI {
         entries.clear();
         e = ee;
         if (i+1<Env.attempts){
+          if (debug){
+            System.out.println("An error occurred while fetching PTO for "+employeeCode+". Retrying in 30 seconds...");
+          }
           Thread.sleep(30000L);
         }
       }
@@ -245,6 +270,9 @@ public class TimeCardAPI {
     return entries;
   }
   private ArrayList<TimecardEntry> getTimecard(String employeeCode, String date) throws Throwable {
+    if (debug){
+      System.out.println("Fetching timecard for "+employeeCode+" on "+date+"...");
+    }
     generateToken();
     final URL url = new URI(Utility.format(timecardURL, date, employeeCode)).toURL();
     Throwable e = null;
@@ -271,8 +299,14 @@ public class TimeCardAPI {
             if (code==401){
               tokenExpiration = -1;
             }else if (code==429){
+              if (debug){
+                System.out.println("Rate limit exceeded. Retrying in 60 seconds...");
+              }
               Thread.sleep(60000L);
             }else{
+              if (debug){
+                System.out.println("Error code: "+code+". Retrying in 30 seconds...");
+              }
               Thread.sleep(30000L);
             }
             generateToken();
@@ -316,6 +350,9 @@ public class TimeCardAPI {
         entries.clear();
         e = ee;
         if (i+1<Env.attempts){
+          if (debug){
+            System.out.println("An error occurred while fetching timecard for "+employeeCode+" on "+date+". Retrying in 30 seconds...");
+          }
           Thread.sleep(30000L);
         }
       }
@@ -326,6 +363,9 @@ public class TimeCardAPI {
     return entries;
   }
   private HashSet<String> getEmployees() throws Throwable {
+    if (debug){
+      System.out.println("Fetching employees...");
+    }
     generateToken();
     final URL url = new URI(employeeURL).toURL();
     Throwable e = null;
@@ -352,8 +392,14 @@ public class TimeCardAPI {
             if (code==401){
               tokenExpiration = -1;
             }else if (code==429){
+              if (debug){
+                System.out.println("Rate limit exceeded. Retrying in 60 seconds...");
+              }
               Thread.sleep(60000L);
             }else{
+              if (debug){
+                System.out.println("Error code: "+code+". Retrying in 30 seconds...");
+              }
               Thread.sleep(30000L);
             }
             generateToken();
@@ -372,6 +418,9 @@ public class TimeCardAPI {
         employees.clear();
         e = ee;
         if (i+1<Env.attempts){
+          if (debug){
+            System.out.println("An error occurred while fetching employees. Retrying in 30 seconds...");
+          }
           Thread.sleep(30000L);
         }
       }
@@ -386,6 +435,9 @@ public class TimeCardAPI {
   private void generateToken() throws Throwable {
     final long t = System.currentTimeMillis();
     if (t>=tokenExpiration){
+      if (debug){
+        System.out.println("Generating new token...");
+      }
       token = null;
       Throwable e = null;
       final URL url = new URI(authURL).toURL();
@@ -414,7 +466,14 @@ public class TimeCardAPI {
             }else{
               token = null;
               if (code==429){
+                if (debug){
+                  System.out.println("Rate limit exceeded. Retrying in 60 seconds...");
+                }
                 Thread.sleep(60000L);
+              }else{
+                if (debug){
+                  System.out.println("Error code: "+code+".");
+                }
               }
             }
           }finally{
@@ -435,6 +494,9 @@ public class TimeCardAPI {
         }catch(Throwable ee){
           e = ee;
           if (i+1<Env.attempts){
+            if (debug){
+              System.out.println("An error occurred while generating token. Retrying in 30 seconds...");
+            }
             Thread.sleep(30000L);
           }
         }

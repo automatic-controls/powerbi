@@ -17,7 +17,8 @@ SELECT
   "a"."time_modified",
   "a"."start_date",
   "a"."end_date",
-  "a"."projected_end_date"
+  "a"."projected_end_date",
+  "a"."est_cost"
 FROM (
   SELECT
     "LinkForJobID" AS "link_for_job_id",
@@ -81,7 +82,15 @@ FROM (
     "JobTimeModified" AS "time_modified",
     "Job Start Date" AS "start_date",
     "Job End Date" AS "end_date",
-    "Job Projected End Date" AS "projected_end_date"
+    "Job Projected End Date" AS "projected_end_date",
+    CAST(
+      CASE
+        WHEN "Job Custom Field 10" REGEXP '\d+(?:,\d+)*(?:\.\d+)?' THEN
+          REPLACE("Job Custom Field 10", ',', '')
+        ELSE
+          NULL
+      END AS MONEY
+    ) AS "est_cost"
   FROM (
     SELECT
       *,
@@ -102,7 +111,7 @@ FROM (
   FROM (
     SELECT
       "x"."LinkToJobID" AS "link_to_job_id",
-      "x"."GLPLTxn Line Credit Amount"-"GLPLTxn Line Debit Amount" AS "amount"
+      "x"."GLPLTxn Line Credit Amount"-"x"."GLPLTxn Line Debit Amount" AS "amount"
     FROM QQubeFinancials.vf_PANDLDETAIL "x"
     INNER JOIN (
       SELECT
@@ -114,4 +123,4 @@ FROM (
   ) "x"
   GROUP BY "link_to_job_id"
 ) "b"
-ON "a"."link_for_job_id" = "b"."link_to_job_id";
+ON SUBSTRING("a"."link_for_job_id",3) = SUBSTRING("b"."link_to_job_id",3);

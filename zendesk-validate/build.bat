@@ -4,6 +4,9 @@ title Java Build Script
 call "%~dp0../env_vars.bat"
 echo.
 
+:: To download dependencies in pom.xml
+::mvn dependency:copy-dependencies
+
 :: Main class name
 set "mainClass=Main.java"
 :: Source code
@@ -19,7 +22,7 @@ set "jar=%~dp0%name%.jar"
 :: Compilation
 echo Compiling...
 rmdir /Q /S "%classes%" >nul 2>nul
-javac -d "%classes%" -cp "%src%;%lib%\*" "%src%\%mainClass%"
+javac -d "%classes%" -cp "%src%;%~dp0lib\*;%lib%\*" "%src%\%mainClass%"
 if %ERRORLEVEL% NEQ 0 (
   rmdir /Q /S "%classes%" >nul 2>nul
   goto :err

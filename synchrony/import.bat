@@ -10,7 +10,7 @@ set "benefits_csv=%dst%\ACES - Benefits Billing Detail Report*.csv"
 set "timesheet_csv=%dst%\ACES - Time Sheet Report*.csv"
 set "alloc_csv=%dst%\ACES - Scheduled Payments*.csv"
 set "script=%~dp0script.sql"
-set "mscript=%~dp0mail_script.ps1"
+set "mscript=%root%mail-script.ps1"
 set "stamps=%~dp0stamps.bat"
 set "PGPASSWORD=!postgresql_pass!"
 set /a error_days=14
@@ -29,7 +29,7 @@ for %%i in ("%alloc_csv%") do (
   set exists_alloc_csv=1
 )
 
-for /f "delims=" %%i in ('PowerShell -NoLogo -Command "[Math]::Round((Get-Date).ToFileTime()/864000000000)"') do set /a days=%%i
+for /f "delims=" %%i in ('pwsh -NoLogo -Command "[Math]::Round((Get-Date).ToFileTime()/864000000000)"') do set /a days=%%i
 set benefits_days=0
 set timesheet_days=0
 set alloc_days=0
@@ -37,7 +37,6 @@ if exist "%stamps%" call "%stamps%"
 
 (
   if exist "%script%" del /F "%script%" >nul
-  if exist "%mscript%" del /F "%mscript%" >nul
   set "err="
   call :main
   if !ErrorLevel! EQU 0 (
@@ -65,7 +64,6 @@ if exist "%stamps%" call "%stamps%"
     call :email
   )
   if exist "%script%" del /F "%script%" >nul
-  if exist "%mscript%" del /F "%mscript%" >nul
 ) >> "%~dp0log.txt" 2>&1
 exit /b
 
@@ -123,12 +121,12 @@ exit /b
   if "%exists_timesheet_csv%" EQU "1" (
     set timesheet_days=%days%
     for %%i in ("%timesheet_csv%") do (
-      PowerShell -NoLogo -File "%~dp0preprocess.ps1" -file "%%~fi"
+      pwsh -NoLogo -File "%~dp0preprocess.ps1" -file "%%~fi"
     )
     (
       echo \set ON_ERROR_STOP true
       for %%i in ("%timesheet_csv%") do (
-        echo \copy payroll.compensation ^(payroll_number, employee_id, employee_name, charge_date, location, position, pay_code, pay_description, shift, hours_units_paid, hourly_rate, hours_worked, pay_amount^) from '%%~fi' with DELIMITER ',' CSV HEADER;
+        echo \copy payroll.compensation ^(payroll_number, employee_id, employee_name, charge_date, location, position, pay_code, pay_description, shift, hours_units_paid, hourly_rate, hours_worked, pay_amount, fringe_rate^) from '%%~fi' with DELIMITER ',' CSV HEADER;
       )
       echo DO $$
       echo     DECLARE
@@ -158,6 +156,7 @@ exit /b
       echo "shift" = COALESCE^(CASE WHEN "shift"='' THEN '0' ELSE "shift" END,'0'^),
       echo "hours_units_paid" = COALESCE^("hours_units_paid",0^),
       echo "hourly_rate" = COALESCE^("hourly_rate",0::MONEY^),
+      echo "fringe_rate" = COALESCE^("fringe_rate",0::MONEY^),
       echo "hours_worked" = COALESCE^("hours_worked",0^),
       echo "pay_amount" = COALESCE^("pay_amount",0::MONEY^);
       echo -- Ensure employee names match for the same ID
@@ -420,23 +419,21 @@ exit /b
 exit /b 0
 
 :email
-  (
-    echo Send-MailMessage -From "!pbi_email!" -To "!error_email!".Split^(";"^) -Subject "Synchrony Import Failure" -Body "%err%See the log file for more details." -SmtpServer "smtp-mail.outlook.com" -Port 587 -UseSsl -Credential ^(New-Object PSCredential^("!pbi_email!", ^(ConvertTo-SecureString "!pbi_password!" -AsPlainText -Force^)^)^)
-    echo if ^( $? ^){ exit 0 }else{ exit 1 }
-  )>"%mscript%"
-  PowerShell -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%mscript%"
+  set "email_to=!error_email!"
+  set "email_subject=Synchrony Import Failure"
+  set "email_body=This is an automated alert. %err% See the log file for more details."
+  pwsh -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%mscript%"
   if %ErrorLevel% NEQ 0 (
     echo [!date! - !time!] Failed to send email notification with 2 attempts left.>>"%~dp0log.txt"
     timeout /t 5 /nobreak >nul
-    PowerShell -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%mscript%"
+    pwsh -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%mscript%"
     if !ErrorLevel! NEQ 0 (
       echo [!date! - !time!] Failed to send email notification with 1 attempt left.>>"%~dp0log.txt"
       timeout /t 5 /nobreak >nul
-      PowerShell -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%mscript%"
+      pwsh -ExecutionPolicy Bypass -NoLogo -NonInteractive -File "%mscript%"
       if !ErrorLevel! NEQ 0 (
         echo [!date! - !time!] Failed to send email notification with 0 attempts left.>>"%~dp0log.txt"
       )
     )
   )
-  if exist "%mscript%" del /F "%mscript%" >nul
 exit /b 0

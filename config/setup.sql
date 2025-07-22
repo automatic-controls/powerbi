@@ -27,6 +27,17 @@ GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA asana_v2 TO stitch;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA mailchimp TO stitch;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA pd TO stitch;
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA zendesk_v2 TO stitch;
+GRANT CONNECT ON DATABASE powerbi TO sov_app;
+GRANT USAGE ON SCHEMA public TO sov_app;
+GRANT USAGE ON SCHEMA quickbooks TO sov_app;
+GRANT USAGE ON SCHEMA asana_v2 TO sov_app;
+GRANT USAGE ON SCHEMA bidtracer TO sov_app;
+GRANT SELECT ON ALL TABLES IN SCHEMA quickbooks TO sov_app;
+GRANT SELECT ON ALL TABLES IN SCHEMA asana_v2 TO sov_app;
+GRANT SELECT ON ALL TABLES IN SCHEMA bidtracer TO sov_app;
+GRANT ALL PRIVILEGES ON TABLE quickbooks.sov TO sov_app;
+GRANT ALL PRIVILEGES ON TABLE quickbooks.sov_bids TO sov_app;
+GRANT ALL PRIVILEGES ON TABLE quickbooks.sov_log TO sov_app;
 CREATE OR REPLACE FUNCTION format_asana_projects_current_status() RETURNS TRIGGER AS $$
   BEGIN
     IF NEW.current_status IS NOT NULL AND try_json_cast(NEW.current_status) IS NULL THEN
@@ -162,7 +173,7 @@ CREATE INDEX bidtracer_materials_bid_id ON bidtracer.materials ("bid_id" ASC);
 CREATE INDEX bidtracer_materials_part ON bidtracer.materials ("part" ASC);
 --*/
 
-/*
+--/*
 -- cradlepoint.routers
 DROP TABLE IF EXISTS cradlepoint.routers CASCADE;
 CREATE TABLE cradlepoint.routers (
@@ -338,7 +349,8 @@ CREATE TABLE payroll.compensation (
     "hours_worked" DOUBLE PRECISION,
     "pay_amount" MONEY,
     "last_modified" TIMESTAMPTZ,
-    "allocation" BOOLEAN
+    "allocation" BOOLEAN,
+    "fringe_rate" MONEY
 );
 CREATE INDEX payroll_compensation_charge_date ON payroll.compensation ("charge_date" DESC);
 --*/
@@ -377,9 +389,66 @@ CREATE TABLE quickbooks.jobs (
   "projected_end_date" DATE
 );
 CREATE INDEX quickbooks_jobs_id ON quickbooks.jobs ("id" ASC);
+-- quickbooks.jobs_billing
+DROP TABLE IF EXISTS quickbooks.jobs_billing CASCADE;
+CREATE TABLE quickbooks.jobs_billing (
+  "job_id" TEXT,
+  "amount" BIGINT,
+  "month" INTEGER
+);
+CREATE INDEX quickbooks_jobs_billing_id ON quickbooks.jobs_billing ("job_id" ASC);
 -- quickbooks.sov
---DROP TABLE IF EXISTS quickbooks.sov CASCADE;
-
+DROP TABLE IF EXISTS quickbooks.sov CASCADE;
+CREATE TABLE quickbooks.sov (
+  "job_id" TEXT,
+  "category" TEXT,
+  "month" INTEGER,
+  "percentage" NUMERIC(5,4)
+);
+CREATE INDEX quickbooks_sov_id ON quickbooks.sov ("job_id" ASC);
+-- quickbooks.sov_mappings
+DROP TABLE IF EXISTS quickbooks.sov_mappings CASCADE;
+CREATE TABLE quickbooks.sov_mappings (
+  "category" TEXT,
+  "mapping" TEXT
+);
+-- quickbooks.sov_users
+DROP TABLE IF EXISTS quickbooks.sov_users CASCADE;
+CREATE TABLE quickbooks.sov_users (
+  "username" TEXT,
+  "role" TEXT,
+  "initials" TEXT,
+  "name" TEXT
+);
+-- quickbooks.sov_bids
+DROP TABLE IF EXISTS quickbooks.sov_bids CASCADE;
+CREATE TABLE quickbooks.sov_bids (
+  "job_id" TEXT,
+  "category" TEXT,
+  "hours" INTEGER,
+  "cost" BIGINT
+);
+-- quickbooks.sov_log
+DROP TABLE IF EXISTS quickbooks.sov_log CASCADE;
+CREATE TABLE quickbooks.sov_log (
+  "time" TIMESTAMPTZ,
+  "job_id" TEXT,
+  "username" TEXT,
+  "message" TEXT
+);
+CREATE INDEX quickbooks_sov_log_time ON quickbooks.sov_log ("time" ASC);
+CREATE INDEX quickbooks_sov_log_id ON quickbooks.sov_log ("job_id" ASC);
+-- quickbooks.sov_version
+DROP TABLE IF EXISTS quickbooks.sov_version CASCADE;
+CREATE TABLE quickbooks.sov_version (
+  "version" TEXT,
+  "update_script" TEXT
+);
+-- quickbooks.sov_locked_projects
+DROP TABLE IF EXISTS quickbooks.sov_locked_projects CASCADE;
+CREATE TABLE quickbooks.sov_locked_projects (
+  "job_id" TEXT
+);
 --*/
 
 --/*
@@ -521,6 +590,109 @@ CREATE OR REPLACE FUNCTION clean_verizon_movements() RETURNS TRIGGER AS $$
     UPDATE verizon.movements
     SET "last_modified" = LOCALTIMESTAMP
     WHERE "last_modified" IS NULL;
+    WITH "new_names" AS (
+      SELECT DISTINCT ON ("vehicle_number")
+        "vehicle_number" AS "vin",
+        "vehicle_name" AS "new_name"
+      FROM verizon.movements
+      ORDER BY "vehicle_number", "last_modified" DESC
+    ), "old_names" AS (
+      SELECT DISTINCT
+        "vehicle_number" AS "vin",
+        "vehicle_name" AS "old_name"
+      FROM verizon.movements
+    ), "map" AS (
+      SELECT
+        "old_names"."old_name",
+        "new_names"."new_name"
+      FROM "new_names" INNER JOIN "old_names"
+      ON "new_names"."vin" = "old_names"."vin"
+      AND "new_names"."new_name" != "old_names"."old_name"
+    )
+    UPDATE verizon.speeding
+    SET "vehicle" = "map"."new_name"
+    FROM "map"
+    WHERE "vehicle" = "map"."old_name";
+    WITH "new_names" AS (
+      SELECT DISTINCT ON ("vehicle_number")
+        "vehicle_number" AS "vin",
+        "vehicle_name" AS "new_name"
+      FROM verizon.movements
+      ORDER BY "vehicle_number", "last_modified" DESC
+    ), "old_names" AS (
+      SELECT DISTINCT
+        "vehicle_number" AS "vin",
+        "vehicle_name" AS "old_name"
+      FROM verizon.movements
+    ), "map" AS (
+      SELECT
+        "old_names"."old_name",
+        "new_names"."new_name"
+      FROM "new_names" INNER JOIN "old_names"
+      ON "new_names"."vin" = "old_names"."vin"
+      AND "new_names"."new_name" != "old_names"."old_name"
+    )
+    UPDATE verizon.services
+    SET "vehicle_name" = "map"."new_name"
+    FROM "map"
+    WHERE "vehicle_name" = "map"."old_name";
+    WITH "new_names" AS (
+      SELECT DISTINCT ON ("vehicle_number")
+        "vehicle_number" AS "vin",
+        "vehicle_name" AS "new_name"
+      FROM verizon.movements
+      ORDER BY "vehicle_number", "last_modified" DESC
+    ), "old_names" AS (
+      SELECT DISTINCT
+        "vehicle_number" AS "vin",
+        "vehicle_name" AS "old_name"
+      FROM verizon.movements
+    ), "map" AS (
+      SELECT
+        "old_names"."old_name",
+        "new_names"."new_name"
+      FROM "new_names" INNER JOIN "old_names"
+      ON "new_names"."vin" = "old_names"."vin"
+      AND "new_names"."new_name" != "old_names"."old_name"
+    )
+    UPDATE verizon.maintenance
+    SET "vehicle_name" = "map"."new_name"
+    FROM "map"
+    WHERE "vehicle_name" = "map"."old_name";
+    WITH "new_names" AS (
+      SELECT DISTINCT ON ("vehicle_number")
+        "vehicle_number" AS "vin",
+        "vehicle_name" AS "new_name"
+      FROM verizon.movements
+      ORDER BY "vehicle_number", "last_modified" DESC
+    ), "old_names" AS (
+      SELECT DISTINCT
+        "vehicle_number" AS "vin",
+        "vehicle_name" AS "old_name"
+      FROM verizon.movements
+    ), "map" AS (
+      SELECT
+        "old_names"."old_name",
+        "new_names"."new_name"
+      FROM "new_names" INNER JOIN "old_names"
+      ON "new_names"."vin" = "old_names"."vin"
+      AND "new_names"."new_name" != "old_names"."old_name"
+    )
+    UPDATE verizon.incidents
+    SET "vehicle" = "map"."new_name"
+    FROM "map"
+    WHERE "vehicle" = "map"."old_name";
+    WITH "new_names" AS (
+      SELECT DISTINCT ON ("vehicle_number")
+        "vehicle_number" AS "vin",
+        "vehicle_name" AS "new_name"
+      FROM verizon.movements
+      ORDER BY "vehicle_number", "last_modified" DESC
+    )
+    UPDATE verizon.movements
+    SET "vehicle_name" = "new_names"."new_name"
+    FROM "new_names"
+    WHERE "vehicle_number" = "new_names"."vin";
     RETURN NULL;
   END;
 $$ LANGUAGE plpgsql;
@@ -552,6 +724,39 @@ CREATE OR REPLACE TRIGGER set_verizon_service_date
 BEFORE INSERT ON verizon.services
 FOR EACH ROW EXECUTE FUNCTION set_verizon_service_date();
 CREATE INDEX verizon_services_date ON verizon.services ("date" DESC);
+-- verizon.maintenance
+DROP TABLE IF EXISTS verizon.maintenance CASCADE;
+CREATE TABLE verizon.maintenance (
+  "service_name" TEXT,
+  "vehicle_name" TEXT,
+  "due_date" DATE,
+  "type" TEXT,
+  "odometer" DOUBLE PRECISION,
+  "hours_of_use" TEXT,
+  "cost" TEXT,
+  "notes" TEXT,
+  "last_modified" TIMESTAMP
+);
+CREATE OR REPLACE FUNCTION clean_verizon_maintenance() RETURNS TRIGGER AS $$
+  DECLARE
+    d DATE;
+  BEGIN
+    SELECT MIN("due_date") INTO d
+    FROM verizon.maintenance
+    WHERE "last_modified" IS NULL;
+    DELETE FROM verizon.maintenance
+    WHERE "last_modified" IS NOT NULL
+    AND "due_date">=d;
+    UPDATE verizon.maintenance
+    SET "last_modified" = LOCALTIMESTAMP
+    WHERE "last_modified" IS NULL;
+    RETURN NULL;
+  END;
+$$ LANGUAGE plpgsql;
+CREATE OR REPLACE TRIGGER trigger_clean_verizon_maintenance
+AFTER INSERT ON verizon.maintenance
+FOR EACH STATEMENT EXECUTE FUNCTION clean_verizon_maintenance();
+CREATE INDEX verizon_maintenance_due_date ON verizon.maintenance ("due_date" DESC);
 -- verizon.speeding
 DROP TABLE IF EXISTS verizon.speeding CASCADE;
 CREATE TABLE verizon.speeding (
