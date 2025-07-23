@@ -110,7 +110,7 @@ flowchart LR
 
 ## Languages
 
-These languages are listed in approximate order of their importance. You should have a decent understanding of every language listed here if you hope to maintain and/or update the existing architecture we use for Power BI.
+These are listed in approximate order of their importance.
 
 | Language | Primary Usage |
 | - | - |
@@ -135,7 +135,7 @@ I created an email group, <pbinotify@automaticcontrols.net>, and set all locatio
 
 Most data is sent to a PostgreSQL database for processing and historical storage before Power BI reports ever touch it. I would suggest inspecting this database with [Visual Studio Code](https://code.visualstudio.com/) and the [PostgreSQL extension](https://marketplace.visualstudio.com/items?itemName=ms-ossdata.vscode-pgsql) to get familiar with its structure.
 
-For accessing the database via command line or batch scripts, I suggest using PSQL, which can be downloaded as a stand-alone command line tool using the [PostgreSQL](https://www.postgresql.org/download/) installer. For accessing the database with a Java application, I suggest using the latest [JDBC connector](https://jdbc.postgresql.org/download/).
+For accessing the database via command line or batch scripts, PSQL may be used, which can be downloaded as a stand-alone command line tool using the [PostgreSQL](https://www.postgresql.org/download/) installer. For accessing the database with a Java application, the latest [JDBC connector](https://jdbc.postgresql.org/download/) can be used.
 
 There is a secondary [SQL Anywhere](https://help.sap.com/docs/SAP_SQL_Anywhere) database which is only used for [Quickbooks] financial data. [QQube] synchronizes data daily from the desktop version of Quickbooks (located on **ACES-PowerBI**). This database can only be directly accessed from  **ACES-PowerBI**, so you'll have to remote into it and use `dsn=QQubeFinancials` or `dsn=QQubeUser`. If prompted for a password, it is `Financials` and `User`, respectively for each DSN.
 
@@ -367,6 +367,7 @@ This section describes a few prerequisites for getting the scripts in this repos
 ```bat
 set "root=%~dp0"
 set "lib=%~dp0lib"
+set "RCLONE_CONFIG=%~dp0rclone.conf"
 set "attempts=3"
 set "pbi_email=pbi@email.com"
 set "error_email=abcdefghijk@amer.teams.ms;username@automaticcontrols.net"
@@ -400,3 +401,5 @@ set "ntfy_auth=nbghregbuyfgebu43c8745ynt8nf85t43y8nf654"
 | [*./qqube-sync/build.bat*](./qqube-sync/build.bat) |
 | [*./qqube-validate/build.bat*](./qqube-validate/build.bat) |
 | [*./zendesk-validate/build.bat*](./zendesk-validate/build.bat) |
+
+6. ...

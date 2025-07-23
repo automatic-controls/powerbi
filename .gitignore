@@ -20,3 +20,4 @@ zendesk-validate/target
 *_dsc_*.*
 queries
 email.pfx
+rclone.conf
